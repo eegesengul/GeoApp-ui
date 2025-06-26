@@ -1,0 +1,11 @@
+<div class="feature-menu">
+  <!-- (click) ile toggleMenu fonksiyonu çağrılır -->
+  <button (click)="toggleMenu()" class="feature-menu-button">Özellikler</button>
+
+  <!-- [class.show] ile isMenuOpen true ise 'show' class'ı eklenir -->
+  <div class="feature-list" [class.show]="isMenuOpen">
+    <button (click)="activateFeature('add-area')" class="feature-item">Alan Ekle</button>
+    <button (click)="activateFeature('view-areas')" class="feature-item">Alanları Gör</button>
+    <!-- Buraya yeni özellikler ekleyebilirsiniz -->
+  </div>
+</div>

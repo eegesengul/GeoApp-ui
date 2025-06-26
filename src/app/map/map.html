@@ -1,5 +1,6 @@
-<!-- YENİ: Çıkış Yap Butonu (sol üst köşe) -->
+<!-- GÜNCELLEME: (featureSelected) olayı, onFeatureSelected($event) fonksiyonuna bağlandı -->
 <div class="logout-container">
+  <app-menu (featureSelected)="onFeatureSelected($event)"></app-menu>
   <button (click)="logout()" class="btn-logout">Çıkış Yap</button>
 </div>
 
@@ -15,6 +16,7 @@
 
 <!-- YENİ: Alan Bilgileri Giriş Modalı -->
 <!-- Bu modal, "Alanı Kaydet" butonuna basıldığında görünecek. -->
+<!-- DÜZELTME: class.modal-overlay -> class="modal-overlay" olarak düzeltildi -->
 <div class="modal-overlay" *ngIf="isModalVisible">
   <div class="modal-content">
     <h3>Alan Bilgilerini Girin</h3>

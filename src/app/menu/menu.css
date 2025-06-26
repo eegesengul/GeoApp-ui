@@ -1,0 +1,55 @@
+/* Menü konteynerinin temel stilleri */
+.feature-menu {
+  position: relative;
+  display: inline-block;
+}
+
+/* Özellikler butonunun stilleri */
+.feature-menu-button {
+  background-color: #4CAF50; /* Yeşil arka plan */
+  color: white; /* Beyaz yazı */
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.feature-menu-button:hover, .feature-menu-button:focus {
+  background-color: #45a049;
+}
+
+/* Özellik listesi (açılır menü) */
+.feature-list {
+  display: none; /* Başlangıçta gizli */
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* Menüdeki her bir özellik butonu */
+.feature-item {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* Fare ile üzerine gelindiğinde özellik butonlarının rengi */
+.feature-item:hover {
+  background-color: #ddd;
+}
+
+/* Menüyü göstermek için kullanılacak sınıf */
+.show {
+  display: block;
+}

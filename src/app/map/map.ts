@@ -14,11 +14,12 @@ import { Style, Fill, Stroke } from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MenuComponent } from '../menu/menu';
 
 @Component({
   selector: 'app-map',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MenuComponent],
   templateUrl: './map.html',
   styleUrls: ['./map.css']
 })
@@ -55,13 +56,38 @@ export class MapComponent implements OnInit, OnDestroy {
       view: new View({ center: fromLonLat([35.2433, 38.9637]), zoom: 6 })
     });
 
-    this.loadExistingAreas();
-    this.baslatCizim();
+    // KALDIRILDI: Bu fonksiyonlar artık başlangıçta otomatik olarak çağrılmayacak.
+    // this.loadExistingAreas();
+    // this.baslatCizim();
     window.addEventListener('keydown', this.handleEscKey);
   }
 
   ngOnDestroy(): void {
     window.removeEventListener('keydown', this.handleEscKey);
+  }
+
+  // YENİ: Menüden gelen olayı işleyen ana fonksiyon
+  onFeatureSelected(featureName: string): void {
+    // Yeni bir işleme başlamadan önce mevcut durumu temizle
+    this.durdurCizim();
+    this.cizimiIptalEt(); // Yarım kalmış bir çizim varsa onu da temizle
+    this.vectorSource.clear(); // "Alanları Gör" dedikten sonra "Alan Ekle" dersen harita temizlensin
+
+    switch (featureName) {
+      case 'add-area':
+        this.baslatCizim();
+        break;
+      case 'view-areas':
+        this.loadExistingAreas();
+        break;
+    }
+  }
+
+  // YENİ: Aktif çizim etkileşimini haritadan kaldıran yardımcı fonksiyon
+  durdurCizim(): void {
+    if (this.draw) {
+      this.map.removeInteraction(this.draw);
+    }
   }
 
   logout(): void {
@@ -78,20 +104,17 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   };
 
-  // DÜZELTME: Bu fonksiyon, backend'den gelen standart GeoJSON FeatureCollection'ı işleyecek şekilde güncellendi.
   loadExistingAreas(): void {
     this.apiService.getAlanlar().subscribe({
       next: (geoJsonData) => {
-        this.vectorSource.clear(); // Haritayı temizle
-        // Gelen verinin geçerli bir GeoJSON ve içinde çizimler (features) olup olmadığını kontrol et
+        // Not: vectorSource.clear() buradan onFeatureSelected'a taşındı.
         if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
           const format = new GeoJSON();
-          // GeoJSON objesini direkt oku, .map() fonksiyonuna gerek yok
           const features = format.readFeatures(geoJsonData, {
-            featureProjection: 'EPSG:3857', // Haritanın projeksiyonu
-            dataProjection: 'EPSG:4326'    // Gelen verinin projeksiyonu (standart)
+            featureProjection: 'EPSG:3857',
+            dataProjection: 'EPSG:4326'
           });
-          this.vectorSource.addFeatures(features); // Alanları haritaya ekle
+          this.vectorSource.addFeatures(features);
         }
       },
       error: (err) => console.error('Alanlar yüklenirken hata oluştu:', err)
@@ -109,12 +132,12 @@ export class MapComponent implements OnInit, OnDestroy {
     this.draw.on('drawend', (event) => {
       this.sonCizilenFeature = event.feature;
       const format = new GeoJSON();
-      // Çizilen alanı GeoJSON formatına çevir
       this.cizilenGeoJsonString = format.writeFeature(this.sonCizilenFeature, {
         featureProjection: 'EPSG:3857',
         dataProjection: 'EPSG:4326'
       });
-      this.map.removeInteraction(this.draw);
+      // GÜNCELLEME: Çizim bitince etkileşimi durdur.
+      this.durdurCizim();
     });
   }
 
@@ -131,7 +154,8 @@ export class MapComponent implements OnInit, OnDestroy {
       this.vectorSource.removeFeature(this.sonCizilenFeature);
       this.sonCizilenFeature = null;
       this.cizilenGeoJsonString = '';
-      this.baslatCizim();
+      // GÜNCELLEME: İptal edince otomatik olarak yeni çizim başlamasın.
+      // this.baslatCizim();
     }
   }
 
@@ -155,13 +179,13 @@ export class MapComponent implements OnInit, OnDestroy {
     this.apiService.kaydetAlan(this.alanName, this.alanDescription, this.cizilenGeoJsonString).subscribe({
       next: () => {
         alert('Alan başarıyla kaydedildi!');
-        this.loadExistingAreas(); // Kayıttan sonra haritayı yenile
+        this.loadExistingAreas(); // Haritayı en son haliyle yenile
 
         this.modaliKapat();
-        // Çizimle ilgili değişkenleri sıfırla ve yeni çizime izin ver
         this.sonCizilenFeature = null;
         this.cizilenGeoJsonString = '';
-        this.baslatCizim();
+        // GÜNCELLEME: Kaydettikten sonra otomatik olarak yeni çizim başlamasın.
+        // this.baslatCizim();
       },
       error: (err) => {
         console.error('Alan kaydedilirken hata:', err);

@@ -4,11 +4,13 @@ import { MapComponent } from './map/map';
 import { AuthComponent } from './auth/auth';
 import { ApiService } from './services/api';
 import { Subscription } from 'rxjs';
+// KALDIRILDI: import { MenuComponent } from './menu/menu';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, MapComponent, AuthComponent],
+  // KALDIRILDI: MenuComponent buradan kaldırıldı
+  imports: [CommonModule, MapComponent, AuthComponent], 
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })

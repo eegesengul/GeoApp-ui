@@ -4,12 +4,15 @@
   height: 97vh;
 }
 
-/* Çıkış Yap Butonu Konteyneri (SAĞ ÜST KÖŞE) */
+/* GÜNCELLEME: Çıkış Yap Butonu ve Menü Konteyneri (SAĞ ÜST KÖŞE) */
 .logout-container {
   position: absolute;
   top: 10px;
-  right: 10px; /* DÜZELTME: 'left' yerine 'right' kullandık */
+  right: 10px;
   z-index: 1000;
+  display: flex; /* Butonları ve menüyü yan yana dizer */
+  align-items: center; /* Dikey olarak ortalar */
+  gap: 10px; /* Aralarına boşluk koyar */
 }
 
 /* Çizim sonrası aksiyon paneli */
