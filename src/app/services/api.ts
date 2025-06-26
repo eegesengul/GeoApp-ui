@@ -47,7 +47,13 @@ export class ApiService {
     this.router.navigate(['/auth']);
   }
 
-  kaydetAlan(alanVerisi: any): Observable<any> {
+  // GÜNCELLEME: Fonksiyon artık 'description' parametresi alıyor
+  kaydetAlan(name: string, description: string, geoJson: string): Observable<any> {
+    const alanVerisi = {
+      name: name,
+      description: description, // AÇIKLAMA İSTEĞE EKLENDİ
+      geoJsonGeometry: geoJson
+    };
     return this.http.post(`${this.baseUrl}/Areas`, alanVerisi);
   }
 

@@ -30,7 +30,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private cizilenGeoJsonString: string = '';
   public isModalVisible: boolean = false;
   public alanName: string = '';
-  public alanDescription: string = '';
+  public alanDescription: string = ''; // GÜNCELLEME: Açıklama alanı tekrar eklendi
 
   constructor(
     private apiService: ApiService,
@@ -81,10 +81,14 @@ export class MapComponent implements OnInit, OnDestroy {
   loadExistingAreas(): void {
     this.apiService.getAlanlar().subscribe({
       next: (areas) => {
-        if (areas && areas.features) {
+        if (areas && areas.length > 0) {
           const format = new GeoJSON();
-          const features = format.readFeatures(areas, {
-            featureProjection: 'EPSG:3857'
+          const features = areas.map((area: any) => {
+            const geoJsonData = typeof area.geoJson === 'string' ? JSON.parse(area.geoJson) : area.geoJson;
+            return format.readFeature(geoJsonData, {
+              featureProjection: 'EPSG:3857',
+              dataProjection: 'EPSG:4326'
+            });
           });
           this.vectorSource.addFeatures(features);
         }
@@ -113,7 +117,11 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   kaydetButonunaBasildi(): void {
-    this.isModalVisible = true;
+    if (this.cizilenGeoJsonString) {
+      this.isModalVisible = true;
+    } else {
+      alert("Lütfen önce bir alan çizin.");
+    }
   }
 
   cizimiIptalEt(): void {
@@ -128,34 +136,30 @@ export class MapComponent implements OnInit, OnDestroy {
   modaliKapat(): void {
     this.isModalVisible = false;
     this.alanName = '';
-    this.alanDescription = '';
+    this.alanDescription = ''; // GÜNCELLEME: Açıklama alanı temizleniyor
   }
 
   alaniKaydet(): void {
-    if (!this.alanName || !this.alanDescription) {
-      alert('Lütfen alan adı ve açıklama girin.');
+    if (!this.alanName) {
+      alert('Lütfen alan adı girin.');
       return;
     }
 
-    const alanVerisi = {
-      name: this.alanName,
-      description: this.alanDescription,
-      geojson: this.cizilenGeoJsonString
-    };
+    if (!this.cizilenGeoJsonString) {
+      alert('Kaydedilecek çizim verisi bulunamadı.');
+      return;
+    }
 
-    this.apiService.kaydetAlan(alanVerisi).subscribe({
-      next: (yeniAlan) => {
-        if (yeniAlan) {
-          const format = new GeoJSON();
-          // DÜZELTME: readFeatures ve addFeatures kullanarak tür uyumluluğunu sağlıyoruz.
-          const features = format.readFeatures(yeniAlan, {
-              featureProjection: 'EPSG:3857'
-          });
-          this.vectorSource.addFeatures(features);
-        }
-        
+    // GÜNCELLEME: Servis artık 3 parametre ile çağrılıyor (name, description, geoJson)
+    this.apiService.kaydetAlan(this.alanName, this.alanDescription, this.cizilenGeoJsonString).subscribe({
+      next: (response) => {
+        console.log('Alan başarıyla kaydedildi:', response);
+        this.vectorSource.clear();
+        this.loadExistingAreas();
+
         this.modaliKapat();
         this.sonCizilenFeature = null;
+        this.cizilenGeoJsonString = '';
         this.baslatCizim();
       },
       error: (err) => {
