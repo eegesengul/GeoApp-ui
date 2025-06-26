@@ -24,7 +24,7 @@ export class ApiService {
     return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
 
-  // --- Auth Fonksiyonları (Değişiklik Yok) ---
+  // --- Auth Fonksiyonları ---
   register(userInfo: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/Auth/register`, userInfo).pipe(
       tap((response: any) => {
@@ -53,26 +53,30 @@ export class ApiService {
     this.router.navigate(['/auth']);
   }
 
-  // --- Alan (Area) Fonksiyonları ---
+  // --- Alan (Area) Fonksiyonları (İsimler standartlaştırıldı ve updateArea düzeltildi) ---
 
-  kaydetAlan(name: string, description: string, geoJson: string): Observable<any> {
-    const alanVerisi = { name, description, geoJsonGeometry: geoJson };
-    return this.http.post(`${this.baseUrl}/Areas`, alanVerisi, { headers: this.getAuthHeaders() });
+  createArea(areaData: { name: string, description: string, geometry: string }): Observable<any> {
+    // Backend `geometry` beklediği için `geoJsonGeometry` ismini `geometry` olarak değiştirdim.
+    // Eğer backend'de isim farklıysa, burayı ona göre güncelleyin.
+    return this.http.post(`${this.baseUrl}/Areas`, areaData, { headers: this.getAuthHeaders() });
   }
 
-  getAlanlar(): Observable<any> {
+  getAreas(): Observable<any> {
     return this.http.get(`${this.baseUrl}/Areas`, { headers: this.getAuthHeaders() });
   }
 
-  deleteAlan(alanId: string): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/Areas/${alanId}`, { headers: this.getAuthHeaders() });
+  deleteArea(areaId: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/Areas/${areaId}`, { headers: this.getAuthHeaders() });
   }
 
-  // *** NİHAİ DÜZELTME BURADA ***
-  // Fonksiyon artık geoJson parametresi almıyor ve göndermiyor.
-  updateAlan(alanId: string, name: string, description: string): Observable<any> {
-    // Sadece adı ve açıklamayı içeren bir gövde (body) oluşturuluyor.
-    const alanVerisi = { name, description };
-    return this.http.put(`${this.baseUrl}/Areas/${alanId}`, alanVerisi, { headers: this.getAuthHeaders() });
+  /**
+   * Alanı günceller.
+   * @param areaId Güncellenecek alanın ID'si.
+   * @param areaData Güncelleme verilerini içeren nesne (id, name, description içermeli).
+   */
+  updateArea(areaId: string, areaData: any): Observable<any> {
+    // Gelen veri nesnesini (id içeren) doğrudan body olarak gönderiyoruz.
+    // Bu, backend'deki id != command.Id kontrolünü geçmemizi sağlar.
+    return this.http.put(`${this.baseUrl}/Areas/${areaId}`, areaData, { headers: this.getAuthHeaders() });
   }
 }

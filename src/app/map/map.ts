@@ -12,6 +12,8 @@ import Draw from 'ol/interaction/Draw';
 import { Feature } from 'ol';
 import { Style, Fill, Stroke } from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
+// WKT formatına çeviri için gerekli import
+import WKT from 'ol/format/WKT';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MenuComponent } from '../menu/menu';
@@ -39,7 +41,8 @@ export class MapComponent implements OnInit, OnDestroy {
   public alanName: string = '';
   public alanDescription: string = '';
   private cizilenGeoJsonString: string = '';
-  private seciliFeatureId: string | number | null = null;
+  // Düzenleme için sadece ID yerine tüm Feature'ı saklayacağız
+  private seciliFeature: Feature<Geometry> | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -89,10 +92,31 @@ export class MapComponent implements OnInit, OnDestroy {
   alaniKaydet(): void {
     if (!this.alanName.trim()) { alert('Lütfen alan adı girin.'); return; }
 
-    if (this.seciliFeatureId) { // Düzenleme Modu
-      // *** NİHAİ DÜZELTME BURADA ***
-      // Servis fonksiyonu artık sadece 3 parametre ile çağrılıyor.
-      this.apiService.updateAlan(this.seciliFeatureId.toString(), this.alanName, this.alanDescription).subscribe({
+    if (this.seciliFeature) { // Düzenleme Modu
+      const featureId = this.seciliFeature.getId();
+      const geometry = this.seciliFeature.getGeometry();
+
+      if (!featureId || !geometry) {
+        alert("Hata: Düzenlenecek alanın ID'si veya geometrisi bulunamadı.");
+        return;
+      }
+      
+      // Geometriyi WKT formatına çeviriyoruz
+      const wktFormat = new WKT();
+      const wktGeometry = wktFormat.writeGeometry(geometry, {
+        featureProjection: 'EPSG:3857', // Haritanın projeksiyonu
+        dataProjection: 'EPSG:4326'    // Backend'in beklediği projeksiyon
+      });
+
+      // Backend'in beklediği `UpdateAreaCommand` nesnesini oluşturuyoruz
+      const updateData = {
+        id: featureId.toString(),
+        name: this.alanName,
+        description: this.alanDescription,
+        wktGeometry: wktGeometry // WKT formatındaki geometri
+      };
+
+      this.apiService.updateArea(featureId.toString(), updateData).subscribe({
         next: () => {
           alert('Alan başarıyla güncellendi!');
           this.loadExistingAreas();
@@ -100,12 +124,17 @@ export class MapComponent implements OnInit, OnDestroy {
         },
         error: (err) => { 
           console.error('Alan güncellenirken hata:', err); 
-          alert('Alan güncellenirken bir hata oluştu.'); 
+          alert('Alan güncellenirken bir hata oluştu. Lütfen konsolu kontrol edin.'); 
         }
       });
-    } else { // Yeni Kayıt Modu (Değişiklik yok, bu kısım doğru)
+    } else { // Yeni Kayıt Modu
       if (!this.cizilenGeoJsonString) { alert('Kaydedilecek çizim verisi bulunamadı.'); return; }
-      this.apiService.kaydetAlan(this.alanName, this.alanDescription, this.cizilenGeoJsonString).subscribe({
+      const createData = {
+        name: this.alanName,
+        description: this.alanDescription,
+        geometry: this.cizilenGeoJsonString
+      };
+      this.apiService.createArea(createData).subscribe({
         next: () => { alert('Alan başarıyla kaydedildi!'); this.loadExistingAreas(); this.modaliKapat(); },
         error: (err) => { console.error('Alan kaydedilirken hata:', err); alert(`Alan kaydedilemedi. Hata: ${err.message}`); }
       });
@@ -113,7 +142,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   loadExistingAreas(): void {
-    this.apiService.getAlanlar().subscribe({
+    this.apiService.getAreas().subscribe({
       next: (geoJsonData) => {
         this.vectorSource.clear();
         if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
@@ -136,32 +165,37 @@ export class MapComponent implements OnInit, OnDestroy {
   haritaTiklamaEtkilesiminiAyarla(): void {
     if (this.haritaTiklamaKey) return;
     this.haritaTiklamaKey = this.map.on('click', (event) => {
-      this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
-        const featureId = feature.getId();
-        if (featureId) {
-          this.seciliFeatureId = featureId;
-          if (this.etkilesimModu === 'delete-area') this.alaniSil();
-          else if (this.etkilesimModu === 'edit-area') this.duzenlemeModaliAc(feature as Feature<Geometry>);
+      this.map.forEachFeatureAtPixel(event.pixel, (featureLike) => {
+        const feature = featureLike as Feature<Geometry>;
+        if (feature.getId()) {
+          this.seciliFeature = feature; // Tıklanan feature'ı sakla
+          if (this.etkilesimModu === 'delete-area') {
+            this.alaniSil();
+          } else if (this.etkilesimModu === 'edit-area') {
+            this.duzenlemeModaliAc(feature);
+          }
         }
-        return true;
+        return true; 
       });
     });
   }
 
   alaniSil(): void {
-    if (!this.seciliFeatureId) return;
-    const feature = this.vectorSource.getFeatureById(this.seciliFeatureId);
-    const featureName = feature ? feature.get('name') : `ID: ${this.seciliFeatureId}`;
+    if (!this.seciliFeature) return;
+    const featureId = this.seciliFeature.getId();
+    if(!featureId) return;
+
+    const featureName = this.seciliFeature.get('name') || `ID: ${featureId}`;
     if (confirm(`'${featureName}' alanını silmek istediğinizden emin misiniz?`)) {
-      this.apiService.deleteAlan(this.seciliFeatureId.toString()).subscribe({
+      this.apiService.deleteArea(featureId.toString()).subscribe({
         next: () => { alert('Alan başarıyla silindi.'); this.loadExistingAreas(); this.tumEtkilesimleriDurdur(); },
         error: (err) => { console.error('Alan silinirken hata:', err); alert('Alan silinirken bir hata oluştu.'); }
       });
     }
-    this.seciliFeatureId = null;
   }
 
   duzenlemeModaliAc(feature: Feature<Geometry>): void {
+    this.seciliFeature = feature; // ID yerine tüm feature'ı saklıyoruz
     this.alanName = feature.get('name') || '';
     this.alanDescription = feature.get('description') || '';
     this.isModalVisible = true;
@@ -173,7 +207,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.etkilesimModu = 'none';
     this.sonCizilenFeature = null;
     this.cizilenGeoJsonString = '';
-    this.seciliFeatureId = null;
+    this.seciliFeature = null; // seciliFeature'ı temizle
   }
 
   modaliKapat(): void {
