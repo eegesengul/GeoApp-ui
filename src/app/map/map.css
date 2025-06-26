@@ -1,0 +1,106 @@
+/* Haritanın boyutunu küçülterek sayfaya tam sığmasını sağlıyoruz */
+.map {
+  width: 99vw;
+  height: 97vh;
+}
+
+/* Çıkış Yap Butonu Konteyneri (SAĞ ÜST KÖŞE) */
+.logout-container {
+  position: absolute;
+  top: 10px;
+  right: 10px; /* DÜZELTME: 'left' yerine 'right' kullandık */
+  z-index: 1000;
+}
+
+/* Çizim sonrası aksiyon paneli */
+.action-container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.action-container p {
+  margin: 0;
+  font-weight: 500;
+  color: #333;
+}
+
+/* Genel Buton Stilleri */
+button {
+  padding: 10px 15px;
+  font-size: 16px;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+}
+button:hover {
+  filter: brightness(110%);
+}
+
+/* Farklı Buton Renkleri */
+.btn-logout { background-color: #dc3545; }
+.btn-save { background-color: #007bff; }
+.btn-cancel { background-color: #6c757d; }
+.btn-onayla { background-color: #28a745; }
+.btn-iptal { background-color: #ffc107; color: #212529; }
+
+
+/* Modal Stilleri */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 25px 35px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 450px;
+}
+
+.modal-content h3 { margin-top: 0; color: #333; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+
+/* Hem input hem textarea için ortak stil */
+.form-group input, .form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 16px;
+  font-family: inherit;
+}
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 25px;
+  gap: 10px;
+}
