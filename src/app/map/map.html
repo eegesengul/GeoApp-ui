@@ -7,32 +7,29 @@
 
 <!-- DÜZELTME: "Alanı Kaydet" butonu artık her zaman görünmeyecek. -->
 <!-- Bu yeni container, sadece çizim bittiğinde ortaya çıkacak. -->
-<div class="action-container" *ngIf="sonCizilenFeature">
+<div class="action-container" *ngIf="sonCizilenFeature && !isModalVisible">
   <p>Alan çizimi tamamlandı. Şimdi kaydedebilir veya iptal edebilirsiniz.</p>
   <button (click)="kaydetButonunaBasildi()" class="btn-action btn-save">Alanı Kaydet</button>
   <button (click)="cizimiIptalEt()" class="btn-action btn-cancel">Çizimi İptal Et</button>
 </div>
 
-<!-- Modal Penceresi (Sizin kodunuzla aynı, sadece buton class'ları düzenlendi) -->
+<!-- YENİ: Alan Bilgileri Giriş Modalı -->
+<!-- Bu modal, "Alanı Kaydet" butonuna basıldığında görünecek. -->
 <div class="modal-overlay" *ngIf="isModalVisible">
   <div class="modal-content">
-    <h3>Alan Detayları</h3>
-    <p>Lütfen çizdiğiniz alan için bir isim ve açıklama girin.</p>
-    
+    <h3>Alan Bilgilerini Girin</h3>
     <div class="form-group">
-      <label for="alanAdi">Alan Adı:</label>
-      <input id="alanAdi" type="text" [(ngModel)]="alanName" placeholder="Örn: Ankara Kalesi Çevresi">
+      <label for="alanName">Alan Adı:</label>
+      <input type="text" id="alanName" [(ngModel)]="alanName" name="alanName" placeholder="Örn: Evimin Bahçesi">
     </div>
-    
     <div class="form-group">
-      <label for="alanAciklamasi">Açıklama:</label>
-      <!-- DÜZELTME: input yerine textarea kullanalım, daha kullanışlı. -->
-      <textarea id="alanAciklamasi" [(ngModel)]="alanDescription" placeholder="Örn: Tarihi yerleri kapsayan turistik bölge."></textarea>
+      <label for="alanDescription">Açıklama:</label>
+      <input type="text" id="alanDescription" [(ngModel)]="alanDescription" name="alanDescription" placeholder="Örn: Sulama yapılacak alan">
     </div>
-    
     <div class="modal-actions">
-      <button class="btn-iptal" (click)="iptalKayit()">İptal</button>
-      <button class="btn-onayla" (click)="onaylaVeKaydet()">Onayla ve Kaydet</button>
+      <!-- DÜZELTME: Fonksiyon adları güncellendi -->
+      <button class="btn-iptal" (click)="modaliKapat()">İptal</button>
+      <button class="btn-onayla" (click)="alaniKaydet()">Onayla ve Kaydet</button>
     </div>
   </div>
 </div>

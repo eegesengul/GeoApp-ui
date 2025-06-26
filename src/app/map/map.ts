@@ -1,21 +1,19 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ApiService } from '../services/api';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-
-// OpenLayers Modülleri
+import { ApiService } from '../services/api';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
-import VectorLayer from 'ol/layer/Vector';
 import OSM from 'ol/source/OSM';
+import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import Draw from 'ol/interaction/Draw';
 import { fromLonLat } from 'ol/proj';
+import Draw from 'ol/interaction/Draw';
+import { Feature } from 'ol';
+import { Style, Fill, Stroke } from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
-import { Fill, Stroke, Style } from 'ol/style';
-import Feature from 'ol/Feature';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-map',
@@ -25,21 +23,17 @@ import Feature from 'ol/Feature';
   styleUrls: ['./map.css']
 })
 export class MapComponent implements OnInit, OnDestroy {
-
   map!: Map;
   vectorSource!: VectorSource;
   private draw!: Draw;
-  
   sonCizilenFeature: Feature | null = null;
   private cizilenGeoJsonString: string = '';
-
   public isModalVisible: boolean = false;
   public alanName: string = '';
   public alanDescription: string = '';
 
-  // DÜZELTME: NgZone artık gerekli değil, constructor'dan kaldırıldı.
   constructor(
-    private apiService: ApiService, 
+    private apiService: ApiService,
     private router: Router
   ) {}
 
@@ -71,89 +65,103 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   logout(): void {
-    // /auth sayfasına (lobiye) "loggedOut=true" (çıkış yapıyorum) mesajıyla git.
-    this.router.navigate(['/auth'], { queryParams: { loggedOut: 'true' } });
+    this.apiService.logout();
   }
-  
+
   handleEscKey = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-      if (this.draw && this.draw.getActive()) {
-        try { this.draw.removeLastPoint(); } 
-        catch (e) { console.log("Silinecek başka nokta yok."); }
+      if (this.isModalVisible) {
+        this.modaliKapat();
+      } else if (this.sonCizilenFeature) {
+        this.cizimiIptalEt();
       }
     }
-  }
+  };
 
   loadExistingAreas(): void {
     this.apiService.getAlanlar().subscribe({
-      next: (geoJsonData) => {
-        this.vectorSource.clear();
-        if (geoJsonData?.features?.length > 0) {
-          const features = new GeoJSON().readFeatures(geoJsonData, {
-            dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'
+      next: (areas) => {
+        if (areas && areas.features) {
+          const format = new GeoJSON();
+          const features = format.readFeatures(areas, {
+            featureProjection: 'EPSG:3857'
           });
           this.vectorSource.addFeatures(features);
         }
       },
-      error: (err) => console.error('Alanlar yüklenirken hata:', err)
+      error: (err) => console.error('Alanlar yüklenirken hata oluştu:', err)
     });
   }
 
   baslatCizim(): void {
-    this.draw = new Draw({ source: this.vectorSource, type: 'Polygon' });
+    this.draw = new Draw({
+      source: this.vectorSource,
+      type: 'Polygon',
+    });
+
     this.map.addInteraction(this.draw);
 
     this.draw.on('drawend', (event) => {
-      this.map.removeInteraction(this.draw);
       this.sonCizilenFeature = event.feature;
-      this.cizilenGeoJsonString = new GeoJSON().writeFeatureObject(event.feature, {
-        dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'
+      const format = new GeoJSON();
+      this.cizilenGeoJsonString = format.writeFeature(this.sonCizilenFeature, {
+        featureProjection: 'EPSG:3857',
+        dataProjection: 'EPSG:4326'
       });
+      this.map.removeInteraction(this.draw);
     });
-  }
-
-  cizimiIptalEt(): void {
-    if (this.sonCizilenFeature) {
-      this.vectorSource.removeFeature(this.sonCizilenFeature);
-    }
-    this.sonCizilenFeature = null;
-    this.cizilenGeoJsonString = '';
-    this.baslatCizim();
   }
 
   kaydetButonunaBasildi(): void {
     this.isModalVisible = true;
   }
-  
-  iptalKayit(): void {
+
+  cizimiIptalEt(): void {
+    if (this.sonCizilenFeature) {
+      this.vectorSource.removeFeature(this.sonCizilenFeature);
+      this.sonCizilenFeature = null;
+      this.cizilenGeoJsonString = '';
+      this.baslatCizim();
+    }
+  }
+
+  modaliKapat(): void {
     this.isModalVisible = false;
     this.alanName = '';
     this.alanDescription = '';
-    this.cizimiIptalEt();
   }
 
-  onaylaVeKaydet(): void {
-    if (!this.alanName.trim() || !this.alanDescription.trim()) {
-        alert('Lütfen Alan Adı ve Açıklama alanlarını doldurun.');
-        return;
+  alaniKaydet(): void {
+    if (!this.alanName || !this.alanDescription) {
+      alert('Lütfen alan adı ve açıklama girin.');
+      return;
     }
-    const payload = {
-      Name: this.alanName,
-      Description: this.alanDescription,
-      GeoJsonGeometry: this.cizilenGeoJsonString
+
+    const alanVerisi = {
+      name: this.alanName,
+      description: this.alanDescription,
+      geojson: this.cizilenGeoJsonString
     };
-    this.apiService.kaydetAlan(payload).subscribe({
-      next: () => {
-        alert(`'${this.alanName}' adlı alan başarıyla kaydedildi!`);
-        this.isModalVisible = false;
-        this.alanName = '';
-        this.alanDescription = '';
+
+    this.apiService.kaydetAlan(alanVerisi).subscribe({
+      next: (yeniAlan) => {
+        if (yeniAlan) {
+          const format = new GeoJSON();
+          // DÜZELTME: readFeatures ve addFeatures kullanarak tür uyumluluğunu sağlıyoruz.
+          const features = format.readFeatures(yeniAlan, {
+              featureProjection: 'EPSG:3857'
+          });
+          this.vectorSource.addFeatures(features);
+        }
+        
+        this.modaliKapat();
         this.sonCizilenFeature = null;
-        this.cizilenGeoJsonString = '';
-        this.loadExistingAreas();
         this.baslatCizim();
       },
-      error: (err) => alert(`Alan kaydedilirken bir hata oluştu: ${err.message}`)
+      error: (err) => {
+        console.error('Alan kaydedilirken hata:', err);
+        alert('Alan kaydedilemedi. Lütfen daha sonra tekrar deneyin.');
+      }
     });
   }
 }

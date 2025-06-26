@@ -1,20 +1,30 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { Router } from '@angular/router';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private baseUrl = 'https://localhost:7262/api';  
+  private baseUrl = 'https://localhost:7262/api';
+  private loggedIn = new BehaviorSubject<boolean>(this.hasToken());
 
-  constructor(private http: HttpClient) { }
+  isLoggedIn$ = this.loggedIn.asObservable();
+
+  constructor(private http: HttpClient, private router: Router) { }
+
+  private hasToken(): boolean {
+    return !!localStorage.getItem('token');
+  }
 
   register(userInfo: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/Auth/register`, userInfo).pipe(
       tap((response: any) => {
         if (response && response.token) {
           localStorage.setItem('token', response.token);
+          this.loggedIn.next(true);
         }
       })
     );
@@ -25,23 +35,23 @@ export class ApiService {
       tap((response: any) => {
         if (response && response.token) {
           localStorage.setItem('token', response.token);
+          this.loggedIn.next(true);
         }
       })
     );
+  }
+
+  logout(): void {
+    localStorage.removeItem('token');
+    this.loggedIn.next(false);
+    this.router.navigate(['/auth']);
   }
 
   kaydetAlan(alanVerisi: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/Areas`, alanVerisi);
   }
 
-  // ======================================================
-  // YENİ EKLENEN FONKSİYON
-  /**
-   * Veritabanında kayıtlı tüm (yetkili olunan) alanları getirir.
-   * Fonksiyonel interceptor'ınız sayesinde bu isteğe token otomatik eklenecektir.
-   */
   getAlanlar(): Observable<any> {
     return this.http.get(`${this.baseUrl}/Areas`);
   }
-  // ======================================================
 }

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../services/api';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-auth',
@@ -20,37 +20,11 @@ export class AuthComponent implements OnInit {
 
   constructor(
     private apiService: ApiService,
-    private router: Router,
-    private route: ActivatedRoute
-  ) {
-    // DEBUG: Component'in oluşturulup oluşturulmadığını kontrol et.
-    console.log('AuthComponent constructor çalıştı!');
-  }
-
-  
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    // DEBUG 1: ngOnInit'in tetiklenip tetiklenmediğini kontrol et.
-    console.log('AuthComponent ngOnInit çalıştı!');
-
-    this.route.queryParams.subscribe(params => {
-      // DEBUG 2: Parametrelerin gelip gelmediğini ve içeriğini gör.
-      console.log('URL parametreleri alındı:', params);
-
-      if (params['loggedOut'] === 'true') {
-        // DEBUG 3: 'if' bloğuna girilip girilmediğini kontrol et.
-        console.log("'if' bloğuna girildi. Token şimdi silinmeli.");
-        localStorage.removeItem('token');
-        console.log('Token silindi (localStorage.removeItem çağrıldı).');
-        
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: { loggedOut: null },
-          queryParamsHandling: 'merge',
-          replaceUrl: true
-        });
-      }
-    });
+    // Çıkış yapma mantığı artık ApiService içinde olduğu için burası boş.
   }
 
   toggleMode() {
