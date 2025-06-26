@@ -30,7 +30,7 @@ export class MapComponent implements OnInit, OnDestroy {
   private cizilenGeoJsonString: string = '';
   public isModalVisible: boolean = false;
   public alanName: string = '';
-  public alanDescription: string = ''; // GÜNCELLEME: Açıklama alanı tekrar eklendi
+  public alanDescription: string = '';
 
   constructor(
     private apiService: ApiService,
@@ -78,19 +78,20 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   };
 
+  // DÜZELTME: Bu fonksiyon, backend'den gelen standart GeoJSON FeatureCollection'ı işleyecek şekilde güncellendi.
   loadExistingAreas(): void {
     this.apiService.getAlanlar().subscribe({
-      next: (areas) => {
-        if (areas && areas.length > 0) {
+      next: (geoJsonData) => {
+        this.vectorSource.clear(); // Haritayı temizle
+        // Gelen verinin geçerli bir GeoJSON ve içinde çizimler (features) olup olmadığını kontrol et
+        if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
           const format = new GeoJSON();
-          const features = areas.map((area: any) => {
-            const geoJsonData = typeof area.geoJson === 'string' ? JSON.parse(area.geoJson) : area.geoJson;
-            return format.readFeature(geoJsonData, {
-              featureProjection: 'EPSG:3857',
-              dataProjection: 'EPSG:4326'
-            });
+          // GeoJSON objesini direkt oku, .map() fonksiyonuna gerek yok
+          const features = format.readFeatures(geoJsonData, {
+            featureProjection: 'EPSG:3857', // Haritanın projeksiyonu
+            dataProjection: 'EPSG:4326'    // Gelen verinin projeksiyonu (standart)
           });
-          this.vectorSource.addFeatures(features);
+          this.vectorSource.addFeatures(features); // Alanları haritaya ekle
         }
       },
       error: (err) => console.error('Alanlar yüklenirken hata oluştu:', err)
@@ -108,6 +109,7 @@ export class MapComponent implements OnInit, OnDestroy {
     this.draw.on('drawend', (event) => {
       this.sonCizilenFeature = event.feature;
       const format = new GeoJSON();
+      // Çizilen alanı GeoJSON formatına çevir
       this.cizilenGeoJsonString = format.writeFeature(this.sonCizilenFeature, {
         featureProjection: 'EPSG:3857',
         dataProjection: 'EPSG:4326'
@@ -136,11 +138,11 @@ export class MapComponent implements OnInit, OnDestroy {
   modaliKapat(): void {
     this.isModalVisible = false;
     this.alanName = '';
-    this.alanDescription = ''; // GÜNCELLEME: Açıklama alanı temizleniyor
+    this.alanDescription = '';
   }
 
   alaniKaydet(): void {
-    if (!this.alanName) {
+    if (!this.alanName.trim()) {
       alert('Lütfen alan adı girin.');
       return;
     }
@@ -150,21 +152,20 @@ export class MapComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // GÜNCELLEME: Servis artık 3 parametre ile çağrılıyor (name, description, geoJson)
     this.apiService.kaydetAlan(this.alanName, this.alanDescription, this.cizilenGeoJsonString).subscribe({
-      next: (response) => {
-        console.log('Alan başarıyla kaydedildi:', response);
-        this.vectorSource.clear();
-        this.loadExistingAreas();
+      next: () => {
+        alert('Alan başarıyla kaydedildi!');
+        this.loadExistingAreas(); // Kayıttan sonra haritayı yenile
 
         this.modaliKapat();
+        // Çizimle ilgili değişkenleri sıfırla ve yeni çizime izin ver
         this.sonCizilenFeature = null;
         this.cizilenGeoJsonString = '';
         this.baslatCizim();
       },
       error: (err) => {
         console.error('Alan kaydedilirken hata:', err);
-        alert('Alan kaydedilemedi. Lütfen daha sonra tekrar deneyin.');
+        alert(`Alan kaydedilemedi. Hata: ${err.message}`);
       }
     });
   }
