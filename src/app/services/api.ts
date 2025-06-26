@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -19,6 +19,12 @@ export class ApiService {
     return !!localStorage.getItem('token');
   }
 
+  private getAuthHeaders(): HttpHeaders {
+    const token = localStorage.getItem('token');
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  }
+
+  // --- Auth Fonksiyonları (Değişiklik Yok) ---
   register(userInfo: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/Auth/register`, userInfo).pipe(
       tap((response: any) => {
@@ -47,16 +53,26 @@ export class ApiService {
     this.router.navigate(['/auth']);
   }
 
+  // --- Alan (Area) Fonksiyonları ---
+
   kaydetAlan(name: string, description: string, geoJson: string): Observable<any> {
-    const alanVerisi = {
-      name: name,
-      description: description,
-      geoJsonGeometry: geoJson // Backend'deki CreateAreaCommand bu ismi bekliyor olmalı
-    };
-    return this.http.post(`${this.baseUrl}/Areas`, alanVerisi);
+    const alanVerisi = { name, description, geoJsonGeometry: geoJson };
+    return this.http.post(`${this.baseUrl}/Areas`, alanVerisi, { headers: this.getAuthHeaders() });
   }
 
   getAlanlar(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/Areas`);
+    return this.http.get(`${this.baseUrl}/Areas`, { headers: this.getAuthHeaders() });
+  }
+
+  deleteAlan(alanId: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/Areas/${alanId}`, { headers: this.getAuthHeaders() });
+  }
+
+  // *** NİHAİ DÜZELTME BURADA ***
+  // Fonksiyon artık geoJson parametresi almıyor ve göndermiyor.
+  updateAlan(alanId: string, name: string, description: string): Observable<any> {
+    // Sadece adı ve açıklamayı içeren bir gövde (body) oluşturuluyor.
+    const alanVerisi = { name, description };
+    return this.http.put(`${this.baseUrl}/Areas/${alanId}`, alanVerisi, { headers: this.getAuthHeaders() });
   }
 }

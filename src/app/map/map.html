@@ -1,22 +1,20 @@
-<!-- GÜNCELLEME: (featureSelected) olayı, onFeatureSelected($event) fonksiyonuna bağlandı -->
+<!-- Menü ve Çıkış Butonu -->
 <div class="logout-container">
   <app-menu (featureSelected)="onFeatureSelected($event)"></app-menu>
   <button (click)="logout()" class="btn-logout">Çıkış Yap</button>
 </div>
 
+<!-- Haritanın gösterileceği ana alan -->
 <div id="map" class="map"></div>
 
-<!-- DÜZELTME: "Alanı Kaydet" butonu artık her zaman görünmeyecek. -->
-<!-- Bu yeni container, sadece çizim bittiğinde ortaya çıkacak. -->
+<!-- ÇİZİM SONRASI ONAY PANELİ (İstediğiniz ve koruduğumuz kısım) -->
 <div class="action-container" *ngIf="sonCizilenFeature && !isModalVisible">
   <p>Alan çizimi tamamlandı. Şimdi kaydedebilir veya iptal edebilirsiniz.</p>
   <button (click)="kaydetButonunaBasildi()" class="btn-action btn-save">Alanı Kaydet</button>
   <button (click)="cizimiIptalEt()" class="btn-action btn-cancel">Çizimi İptal Et</button>
 </div>
 
-<!-- YENİ: Alan Bilgileri Giriş Modalı -->
-<!-- Bu modal, "Alanı Kaydet" butonuna basıldığında görünecek. -->
-<!-- DÜZELTME: class.modal-overlay -> class="modal-overlay" olarak düzeltildi -->
+<!-- BİLGİ GİRİŞ MODALI -->
 <div class="modal-overlay" *ngIf="isModalVisible">
   <div class="modal-content">
     <h3>Alan Bilgilerini Girin</h3>
@@ -24,13 +22,11 @@
       <label for="alanName">Alan Adı:</label>
       <input type="text" id="alanName" [(ngModel)]="alanName" name="alanName" placeholder="Örn: Evimin Bahçesi">
     </div>
-    <!-- GÜNCELLEME: Açıklama alanı tekrar aktif edildi -->
     <div class="form-group">
       <label for="alanDescription">Açıklama:</label>
       <input type="text" id="alanDescription" [(ngModel)]="alanDescription" name="alanDescription" placeholder="Örn: Sulama yapılacak alan">
     </div>
     <div class="modal-actions">
-      <!-- DÜZELTME: Fonksiyon adları güncellendi -->
       <button class="btn-iptal" (click)="modaliKapat()">İptal</button>
       <button class="btn-onayla" (click)="alaniKaydet()">Onayla ve Kaydet</button>
     </div>

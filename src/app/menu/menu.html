@@ -5,7 +5,10 @@
   <!-- [class.show] ile isMenuOpen true ise 'show' class'ı eklenir -->
   <div class="feature-list" [class.show]="isMenuOpen">
     <button (click)="activateFeature('add-area')" class="feature-item">Alan Ekle</button>
-    <button (click)="activateFeature('view-areas')" class="feature-item">Alanları Gör</button>
-    <!-- Buraya yeni özellikler ekleyebilirsiniz -->
+    <!-- YENİ: Alanı Düzenle butonu eklendi -->
+    <button (click)="activateFeature('edit-area')" class="feature-item">Alanı Düzenle</button>
+    <!-- YENİ: Alanı Sil butonu eklendi -->
+    <button (click)="activateFeature('delete-area')" class="feature-item">Alanı Sil</button>
+    <!-- KALDIRILDI: "Alanları Gör" butonu, yeni mantıkta gereksiz olduğu için kaldırıldı. -->
   </div>
 </div>
