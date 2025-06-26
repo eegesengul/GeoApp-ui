@@ -53,11 +53,12 @@ export class ApiService {
     this.router.navigate(['/auth']);
   }
 
-  // --- Alan (Area) Fonksiyonları (İsimler standartlaştırıldı ve updateArea düzeltildi) ---
+  // --- Alan (Area) Fonksiyonları ---
 
-  createArea(areaData: { name: string, description: string, geometry: string }): Observable<any> {
-    // Backend `geometry` beklediği için `geoJsonGeometry` ismini `geometry` olarak değiştirdim.
-    // Eğer backend'de isim farklıysa, burayı ona göre güncelleyin.
+  // **** DEĞİŞİKLİK BURADA ****
+  // createArea fonksiyonunun tip tanımını, `map.ts` ve backend (CreateAreaCommand) ile
+  // uyumlu olacak şekilde `geoJsonGeometry` olarak güncelliyoruz.
+  createArea(areaData: { name: string, description: string, geoJsonGeometry: string }): Observable<any> {
     return this.http.post(`${this.baseUrl}/Areas`, areaData, { headers: this.getAuthHeaders() });
   }
 
@@ -72,11 +73,10 @@ export class ApiService {
   /**
    * Alanı günceller.
    * @param areaId Güncellenecek alanın ID'si.
-   * @param areaData Güncelleme verilerini içeren nesne (id, name, description içermeli).
+   * @param areaData Güncelleme verilerini içeren nesne.
    */
   updateArea(areaId: string, areaData: any): Observable<any> {
     // Gelen veri nesnesini (id içeren) doğrudan body olarak gönderiyoruz.
-    // Bu, backend'deki id != command.Id kontrolünü geçmemizi sağlar.
     return this.http.put(`${this.baseUrl}/Areas/${areaId}`, areaData, { headers: this.getAuthHeaders() });
   }
 }

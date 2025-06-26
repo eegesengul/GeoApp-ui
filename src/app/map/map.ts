@@ -41,7 +41,6 @@ export class MapComponent implements OnInit, OnDestroy {
   public alanName: string = '';
   public alanDescription: string = '';
   private cizilenGeoJsonString: string = '';
-  // Düzenleme için sadece ID yerine tüm Feature'ı saklayacağız
   private seciliFeature: Feature<Geometry> | null = null;
 
   constructor(
@@ -55,7 +54,8 @@ export class MapComponent implements OnInit, OnDestroy {
     const vectorLayer = new VectorLayer({ source: this.vectorSource, style: savedAreaStyle });
     this.map = new Map({ target: 'map', layers: [ new TileLayer({ source: new OSM() }), vectorLayer ], view: new View({ center: fromLonLat([35.2433, 38.9637]), zoom: 6 }) });
     this.loadExistingAreas();
-    window.addEventListener('keydown', this.handleEscKey);
+    // Klavye olaylarını dinlemek için genel bir dinleyici ekliyoruz.
+    window.addEventListener('keydown', this.handleKeyDown);
   }
 
   kaydetButonunaBasildi(): void {
@@ -101,26 +101,24 @@ export class MapComponent implements OnInit, OnDestroy {
         return;
       }
       
-      // Geometriyi WKT formatına çeviriyoruz
       const wktFormat = new WKT();
       const wktGeometry = wktFormat.writeGeometry(geometry, {
-        featureProjection: 'EPSG:3857', // Haritanın projeksiyonu
-        dataProjection: 'EPSG:4326'    // Backend'in beklediği projeksiyon
+        featureProjection: 'EPSG:3857',
+        dataProjection: 'EPSG:4326'
       });
 
-      // Backend'in beklediği `UpdateAreaCommand` nesnesini oluşturuyoruz
       const updateData = {
         id: featureId.toString(),
         name: this.alanName,
         description: this.alanDescription,
-        wktGeometry: wktGeometry // WKT formatındaki geometri
+        wktGeometry: wktGeometry
       };
 
       this.apiService.updateArea(featureId.toString(), updateData).subscribe({
         next: () => {
           alert('Alan başarıyla güncellendi!');
           this.loadExistingAreas();
-          this.modaliKapat();
+          this.islemSonrasiTemizle();
         },
         error: (err) => { 
           console.error('Alan güncellenirken hata:', err); 
@@ -129,14 +127,23 @@ export class MapComponent implements OnInit, OnDestroy {
       });
     } else { // Yeni Kayıt Modu
       if (!this.cizilenGeoJsonString) { alert('Kaydedilecek çizim verisi bulunamadı.'); return; }
+      
       const createData = {
         name: this.alanName,
         description: this.alanDescription,
-        geometry: this.cizilenGeoJsonString
+        geoJsonGeometry: this.cizilenGeoJsonString 
       };
+
       this.apiService.createArea(createData).subscribe({
-        next: () => { alert('Alan başarıyla kaydedildi!'); this.loadExistingAreas(); this.modaliKapat(); },
-        error: (err) => { console.error('Alan kaydedilirken hata:', err); alert(`Alan kaydedilemedi. Hata: ${err.message}`); }
+        next: () => { 
+            alert('Alan başarıyla kaydedildi!'); 
+            this.loadExistingAreas();
+            this.islemSonrasiTemizle();
+        },
+        error: (err) => { 
+            console.error('Alan kaydedilirken hata:', err); 
+            alert(`Alan kaydedilemedi. Hata: ${err.message}`); 
+        }
       });
     }
   }
@@ -168,7 +175,7 @@ export class MapComponent implements OnInit, OnDestroy {
       this.map.forEachFeatureAtPixel(event.pixel, (featureLike) => {
         const feature = featureLike as Feature<Geometry>;
         if (feature.getId()) {
-          this.seciliFeature = feature; // Tıklanan feature'ı sakla
+          this.seciliFeature = feature;
           if (this.etkilesimModu === 'delete-area') {
             this.alaniSil();
           } else if (this.etkilesimModu === 'edit-area') {
@@ -188,14 +195,21 @@ export class MapComponent implements OnInit, OnDestroy {
     const featureName = this.seciliFeature.get('name') || `ID: ${featureId}`;
     if (confirm(`'${featureName}' alanını silmek istediğinizden emin misiniz?`)) {
       this.apiService.deleteArea(featureId.toString()).subscribe({
-        next: () => { alert('Alan başarıyla silindi.'); this.loadExistingAreas(); this.tumEtkilesimleriDurdur(); },
-        error: (err) => { console.error('Alan silinirken hata:', err); alert('Alan silinirken bir hata oluştu.'); }
+        next: () => { 
+            alert('Alan başarıyla silindi.'); 
+            this.loadExistingAreas(); 
+            this.seciliFeature = null;
+        },
+        error: (err) => { 
+            console.error('Alan silinirken hata:', err); 
+            alert('Alan silinirken bir hata oluştu.'); 
+        }
       });
     }
   }
 
   duzenlemeModaliAc(feature: Feature<Geometry>): void {
-    this.seciliFeature = feature; // ID yerine tüm feature'ı saklıyoruz
+    this.seciliFeature = feature;
     this.alanName = feature.get('name') || '';
     this.alanDescription = feature.get('description') || '';
     this.isModalVisible = true;
@@ -207,7 +221,15 @@ export class MapComponent implements OnInit, OnDestroy {
     this.etkilesimModu = 'none';
     this.sonCizilenFeature = null;
     this.cizilenGeoJsonString = '';
-    this.seciliFeature = null; // seciliFeature'ı temizle
+    this.seciliFeature = null;
+  }
+
+  islemSonrasiTemizle(): void {
+    this.isModalVisible = false;
+    this.alanName = '';
+    this.alanDescription = '';
+    this.sonCizilenFeature = null;
+    this.seciliFeature = null;
   }
 
   modaliKapat(): void {
@@ -222,15 +244,32 @@ export class MapComponent implements OnInit, OnDestroy {
     this.apiService.logout();
   }
 
-  handleEscKey = (event: KeyboardEvent) => {
+  // **** YENİ FONKSİYON ****
+  // Hem Escape hem de Backspace tuşlarını yöneten yeni, birleşik fonksiyon.
+  handleKeyDown = (event: KeyboardEvent) => {
+    // Escape tuşuna basıldığında
     if (event.key === 'Escape') {
-      if (this.isModalVisible) this.modaliKapat();
-      else this.cizimiIptalEt();
+      if (this.isModalVisible) {
+        this.modaliKapat();
+      } else {
+        this.cizimiIptalEt();
+      }
+    } 
+    // Backspace tuşuna basıldığında
+    else if (event.key === 'Backspace') {
+      // Sadece 'alan ekleme' modundaysak ve çizim etkileşimi aktifse çalışır.
+      if (this.etkilesimModu === 'add-area' && this.draw) {
+        // Tarayıcının bir önceki sayfaya gitmesini engelliyoruz.
+        event.preventDefault();
+        // Çizimdeki son noktayı kaldırıyoruz.
+        this.draw.removeLastPoint();
+      }
     }
   };
 
   ngOnDestroy(): void {
-    window.removeEventListener('keydown', this.handleEscKey);
+    // Component kaldırıldığında dinleyiciyi de kaldırıyoruz.
+    window.removeEventListener('keydown', this.handleKeyDown);
     this.tumEtkilesimleriDurdur();
   }
 }
