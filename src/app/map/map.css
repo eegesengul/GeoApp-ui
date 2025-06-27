@@ -4,36 +4,15 @@
   height: 97vh;
 }
 
-/* GÜNCELLEME: Çıkış Yap Butonu ve Menü Konteyneri (SAĞ ÜST KÖŞE) */
+/* Çıkış Yap Butonu ve Menü Konteyneri */
 .logout-container {
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 1000;
-  display: flex; /* Butonları ve menüyü yan yana dizer */
-  align-items: center; /* Dikey olarak ortalar */
-  gap: 10px; /* Aralarına boşluk koyar */
-}
-
-/* Çizim sonrası aksiyon paneli */
-.action-container {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   display: flex;
   align-items: center;
-  gap: 15px;
-}
-.action-container p {
-  margin: 0;
-  font-weight: 500;
-  color: #333;
+  gap: 10px;
 }
 
 /* Genel Buton Stilleri */
@@ -58,52 +37,80 @@ button:hover {
 .btn-onayla { background-color: #28a745; }
 .btn-iptal { background-color: #ffc107; color: #212529; }
 
-
-/* Modal Stilleri */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 25px 35px;
+/* Alan Bilgi Kutusu Stilleri */
+.info-box {
+  position: absolute;
+  top: 70px;
+  right: 10px;
+  width: 280px;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  width: 90%;
-  max-width: 450px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 1000;
+  color: #333;
+  border-left: 5px solid #007bff;
 }
 
-.modal-content h3 { margin-top: 0; color: #333; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
-
-/* Hem input hem textarea için ortak stil */
-.form-group input, .form-group textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 16px;
-  font-family: inherit;
-}
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
+.info-box h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 18px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+  color: #0056b3;
 }
 
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 25px;
-  gap: 10px;
+.info-box p { margin: 0; font-size: 14px; line-height: 1.5; }
+
+.info-box .close-btn {
+  position: absolute; top: 5px; right: 10px; background: none; border: none;
+  font-size: 24px; font-weight: bold; color: #aaa; cursor: pointer;
+  padding: 0; box-shadow: none; line-height: 1;
+}
+.info-box .close-btn:hover { color: #333; }
+
+/* DÜZENLEME VE EKLEME PANELLERİ İÇİN ORTAK STİLLER */
+.edit-panel, .add-panel {
+  position: absolute;
+  top: 70px;
+  left: 10px;
+  width: 280px;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 1000;
+}
+
+.edit-panel { border-left: 5px solid #ffc107; } /* Düzenleme rengi */
+.add-panel { border-left: 5px solid #28a745; } /* Ekleme rengi */
+
+.edit-panel h3, .add-panel h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 8px;
+}
+
+.edit-panel h3 { color: #c89600; }
+.add-panel h3 { color: #218838; }
+
+.edit-panel .form-group, .add-panel .form-group { margin-bottom: 15px; }
+
+.edit-panel .form-group label, .add-panel .form-group label {
+  display: block; margin-bottom: 5px; font-weight: bold;
+  color: #555; font-size: 14px;
+}
+
+.edit-panel .form-group input, .edit-panel .form-group textarea,
+.add-panel .form-group input, .add-panel .form-group textarea {
+  width: 100%; padding: 8px; border: 1px solid #ccc;
+  border-radius: 4px; box-sizing: border-box; font-size: 14px;
+}
+
+.edit-panel .panel-actions, .add-panel .panel-actions {
+  display: flex; justify-content: flex-end;
+  gap: 10px; margin-top: 15px;
 }

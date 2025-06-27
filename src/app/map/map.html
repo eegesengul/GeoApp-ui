@@ -7,28 +7,43 @@
 <!-- Haritanın gösterileceği ana alan -->
 <div id="map" class="map"></div>
 
-<!-- ÇİZİM SONRASI ONAY PANELİ (İstediğiniz ve koruduğumuz kısım) -->
-<div class="action-container" *ngIf="sonCizilenFeature && !isModalVisible">
-  <p>Alan çizimi tamamlandı. Şimdi kaydedebilir veya iptal edebilirsiniz.</p>
-  <button (click)="kaydetButonunaBasildi()" class="btn-action btn-save">Alanı Kaydet</button>
-  <button (click)="cizimiIptalEt()" class="btn-action btn-cancel">Çizimi İptal Et</button>
+<!-- ALAN BİLGİ KUTUSU -->
+<div class="info-box" *ngIf="isInfoBoxVisible && selectedFeatureInfo">
+  <button class="close-btn" (click)="closeInfoBox()">×</button>
+  <h3>{{ selectedFeatureInfo.name }}</h3>
+  <p>{{ selectedFeatureInfo.description }}</p>
 </div>
 
-<!-- BİLGİ GİRİŞ MODALI -->
-<div class="modal-overlay" *ngIf="isModalVisible">
-  <div class="modal-content">
-    <h3>Alan Bilgilerini Girin</h3>
-    <div class="form-group">
-      <label for="alanName">Alan Adı:</label>
-      <input type="text" id="alanName" [(ngModel)]="alanName" name="alanName" placeholder="Örn: Evimin Bahçesi">
-    </div>
-    <div class="form-group">
-      <label for="alanDescription">Açıklama:</label>
-      <input type="text" id="alanDescription" [(ngModel)]="alanDescription" name="alanDescription" placeholder="Örn: Sulama yapılacak alan">
-    </div>
-    <div class="modal-actions">
-      <button class="btn-iptal" (click)="modaliKapat()">İptal</button>
-      <button class="btn-onayla" (click)="alaniKaydet()">Onayla ve Kaydet</button>
-    </div>
+<!-- ALAN DÜZENLEME PANELİ -->
+<div class="edit-panel" *ngIf="isEditPanelVisible">
+  <h3>Alanı Düzenle</h3>
+  <div class="form-group">
+    <label for="editName">Alan Adı:</label>
+    <input type="text" id="editName" [(ngModel)]="editName" name="editName">
+  </div>
+  <div class="form-group">
+    <label for="editDescription">Açıklama:</label>
+    <textarea id="editDescription" [(ngModel)]="editDescription" name="editDescription" rows="3"></textarea>
+  </div>
+  <div class="panel-actions">
+    <button class="btn-onayla" (click)="kaydetDuzenleme()">Kaydet</button>
+    <button class="btn-iptal" (click)="iptalEtDuzenleme()">İptal</button>
+  </div>
+</div>
+
+<!-- YENİ: ALAN EKLEME PANELİ -->
+<div class="add-panel" *ngIf="isAddPanelVisible">
+  <h3>Yeni Alan Ekle</h3>
+  <div class="form-group">
+    <label for="addName">Alan Adı:</label>
+    <input type="text" id="addName" [(ngModel)]="alanName" name="addName" placeholder="Örn: Evimin Bahçesi">
+  </div>
+  <div class="form-group">
+    <label for="addDescription">Açıklama:</label>
+    <textarea id="addDescription" [(ngModel)]="alanDescription" name="addDescription" rows="3" placeholder="Örn: Sulama yapılacak alan"></textarea>
+  </div>
+  <div class="panel-actions">
+    <button class="btn-onayla" (click)="alaniKaydet()">Kaydet</button>
+    <button class="btn-iptal" (click)="cizimiIptalEt()">İptal</button>
   </div>
 </div>

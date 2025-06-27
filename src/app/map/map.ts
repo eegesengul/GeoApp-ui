@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../services/api';
 import Map from 'ol/Map';
@@ -12,7 +12,6 @@ import Draw from 'ol/interaction/Draw';
 import { Feature } from 'ol';
 import { Style, Fill, Stroke } from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
-// WKT formatına çeviri için gerekli import
 import WKT from 'ol/format/WKT';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +19,9 @@ import { MenuComponent } from '../menu/menu';
 import { unByKey } from 'ol/Observable';
 import { EventsKey } from 'ol/events';
 import { Geometry } from 'ol/geom';
+import Select from 'ol/interaction/Select';
+import Modify from 'ol/interaction/Modify';
+import { click } from 'ol/events/condition';
 
 type EtkilesimModu = 'add-area' | 'edit-area' | 'delete-area' | 'none';
 
@@ -33,19 +35,32 @@ type EtkilesimModu = 'add-area' | 'edit-area' | 'delete-area' | 'none';
 export class MapComponent implements OnInit, OnDestroy {
   map!: Map;
   vectorSource!: VectorSource;
-  private draw!: Draw;
+  
+  private draw: Draw | null = null;
+  private select: Select | null = null;
+  private modify: Modify | null = null;
   private haritaTiklamaKey: EventsKey | null = null;
+
   public etkilesimModu: EtkilesimModu = 'none';
-  public isModalVisible: boolean = false;
   public sonCizilenFeature: Feature<Geometry> | null = null;
   public alanName: string = '';
   public alanDescription: string = '';
   private cizilenGeoJsonString: string = '';
-  private seciliFeature: Feature<Geometry> | null = null;
+
+  public selectedFeatureInfo: { name: string, description: string } | null = null;
+  public isInfoBoxVisible: boolean = false;
+
+  public isAddPanelVisible: boolean = false;
+  public isEditPanelVisible: boolean = false;
+  private featureToEdit: Feature<Geometry> | null = null;
+  public editName: string = '';
+  public editDescription: string = '';
+  private originalGeometryForEdit: Geometry | null = null;
 
   constructor(
     private apiService: ApiService,
-    private router: Router
+    private router: Router,
+    private zone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -53,223 +68,247 @@ export class MapComponent implements OnInit, OnDestroy {
     this.vectorSource = new VectorSource({ wrapX: false });
     const vectorLayer = new VectorLayer({ source: this.vectorSource, style: savedAreaStyle });
     this.map = new Map({ target: 'map', layers: [ new TileLayer({ source: new OSM() }), vectorLayer ], view: new View({ center: fromLonLat([35.2433, 38.9637]), zoom: 6 }) });
+    
     this.loadExistingAreas();
-    // Klavye olaylarını dinlemek için genel bir dinleyici ekliyoruz.
-    window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keydown', this.handleKeyDown.bind(this));
+
+    this.map.on('click', (event) => {
+      if (this.etkilesimModu !== 'none') return;
+      const feature = this.map.forEachFeatureAtPixel(event.pixel, (f) => f as Feature<Geometry>);
+      this.zone.run(() => {
+        if (feature && feature.get('name')) {
+          this.selectedFeatureInfo = { name: feature.get('name'), description: feature.get('description'), };
+          this.isInfoBoxVisible = true;
+        } else {
+          this.closeInfoBox();
+        }
+      });
+    });
   }
 
-  kaydetButonunaBasildi(): void {
-    if (this.cizilenGeoJsonString) { this.isModalVisible = true; } 
-    else { alert("Lütfen önce bir alan çizin."); }
+  public closeInfoBox(): void {
+    this.isInfoBoxVisible = false;
+    this.selectedFeatureInfo = null;
   }
 
-  cizimiIptalEt(): void {
-    if (this.sonCizilenFeature) { this.vectorSource.removeFeature(this.sonCizilenFeature); }
+  onFeatureSelected(mod: string): void {
+    this.closeInfoBox();
+    this.etkilesimModunuDegistir(mod as EtkilesimModu);
+  }
+
+  etkilesimModunuDegistir(mod: EtkilesimModu): void {
+    this.closeInfoBox();
     this.tumEtkilesimleriDurdur();
+    this.etkilesimModu = mod;
+
+    switch (mod) {
+      case 'add-area': this.baslatCizim(); break;
+      case 'edit-area': this.baslatDuzenleme(); break;
+      case 'delete-area': this.baslatSilme(); break;
+    }
+  }
+
+  tumEtkilesimleriDurdur(): void {
+    this.iptalEtDuzenleme();
+    this.cizimiIptalEt();
+    if (this.draw) this.map.removeInteraction(this.draw);
+    if (this.select) this.map.removeInteraction(this.select);
+    if (this.modify) this.map.removeInteraction(this.modify);
+    if (this.haritaTiklamaKey) { unByKey(this.haritaTiklamaKey); this.haritaTiklamaKey = null; }
+    this.etkilesimModu = 'none';
   }
 
   baslatCizim(): void {
     this.draw = new Draw({ source: this.vectorSource, type: 'Polygon' });
     this.map.addInteraction(this.draw);
+
     this.draw.on('drawend', (event) => {
-      this.sonCizilenFeature = event.feature;
-      const format = new GeoJSON();
-      this.cizilenGeoJsonString = format.writeFeature(this.sonCizilenFeature, { featureProjection: 'EPSG:3857', dataProjection: 'EPSG:4326' });
-      this.map.removeInteraction(this.draw);
+        this.zone.run(() => {
+            this.sonCizilenFeature = event.feature;
+            const geoJsonFormat = new GeoJSON();
+            this.cizilenGeoJsonString = geoJsonFormat.writeFeature(this.sonCizilenFeature, {
+                dataProjection: 'EPSG:4326',
+                featureProjection: this.map.getView().getProjection()
+            });
+            if (this.draw) { this.map.removeInteraction(this.draw); }
+            this.isAddPanelVisible = true;
+            this.closeInfoBox();
+        });
     });
   }
 
-  onFeatureSelected(featureName: string): void {
-    this.tumEtkilesimleriDurdur(); 
-    this.etkilesimModu = featureName as EtkilesimModu;
-    switch (this.etkilesimModu) {
-      case 'add-area': this.baslatCizim(); break;
-      case 'edit-area': alert('Düzenleme Modu: Lütfen haritadan düzenlemek istediğiniz bir alanı seçin.'); this.haritaTiklamaEtkilesiminiAyarla(); break;
-      case 'delete-area': alert('Silme Modu: Lütfen haritadan silmek istediğiniz bir alanı seçin.'); this.haritaTiklamaEtkilesiminiAyarla(); break;
-    }
+  baslatDuzenleme(): void {
+    this.select = new Select({ style: new Style({ fill: new Fill({ color: 'rgba(255, 0, 0, 0.2)' }), stroke: new Stroke({ color: 'red', width: 3 }), }) });
+    this.map.addInteraction(this.select);
+    this.modify = new Modify({ features: this.select.getFeatures() });
+    this.map.addInteraction(this.modify);
+
+    this.select.on('select', (event) => {
+        this.zone.run(() => {
+            if (event.selected.length > 0) {
+                this.featureToEdit = event.selected[0] as Feature<Geometry>;
+                this.originalGeometryForEdit = this.featureToEdit.getGeometry()?.clone() ?? null;
+                this.editName = this.featureToEdit.get('name') || '';
+                this.editDescription = this.featureToEdit.get('description') || '';
+                this.isEditPanelVisible = true;
+                this.closeInfoBox();
+            } else {
+                this.iptalEtDuzenleme();
+            }
+        });
+    });
   }
 
-  alaniKaydet(): void {
-    if (!this.alanName.trim()) { alert('Lütfen alan adı girin.'); return; }
-
-    if (this.seciliFeature) { // Düzenleme Modu
-      const featureId = this.seciliFeature.getId();
-      const geometry = this.seciliFeature.getGeometry();
-
-      if (!featureId || !geometry) {
-        alert("Hata: Düzenlenecek alanın ID'si veya geometrisi bulunamadı.");
-        return;
-      }
-      
-      const wktFormat = new WKT();
-      const wktGeometry = wktFormat.writeGeometry(geometry, {
-        featureProjection: 'EPSG:3857',
-        dataProjection: 'EPSG:4326'
-      });
-
-      const updateData = {
-        id: featureId.toString(),
-        name: this.alanName,
-        description: this.alanDescription,
-        wktGeometry: wktGeometry
-      };
-
-      this.apiService.updateArea(featureId.toString(), updateData).subscribe({
-        next: () => {
-          alert('Alan başarıyla güncellendi!');
-          this.loadExistingAreas();
-          this.islemSonrasiTemizle();
-        },
-        error: (err) => { 
-          console.error('Alan güncellenirken hata:', err); 
-          alert('Alan güncellenirken bir hata oluştu. Lütfen konsolu kontrol edin.'); 
-        }
-      });
-    } else { // Yeni Kayıt Modu
-      if (!this.cizilenGeoJsonString) { alert('Kaydedilecek çizim verisi bulunamadı.'); return; }
-      
-      const createData = {
-        name: this.alanName,
-        description: this.alanDescription,
-        geoJsonGeometry: this.cizilenGeoJsonString 
-      };
-
-      this.apiService.createArea(createData).subscribe({
-        next: () => { 
-            alert('Alan başarıyla kaydedildi!'); 
-            this.loadExistingAreas();
-            this.islemSonrasiTemizle();
-        },
-        error: (err) => { 
-            console.error('Alan kaydedilirken hata:', err); 
-            alert(`Alan kaydedilemedi. Hata: ${err.message}`); 
-        }
-      });
-    }
+  baslatSilme(): void {
+    this.haritaTiklamaKey = this.map.on('click', (event) => {
+        this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
+            const typedFeature = feature as Feature<Geometry>;
+            const featureId = typedFeature.get('id');
+            if (featureId && confirm(`'${typedFeature.get('name')}' adlı alanı silmek istediğinizden emin misiniz?`)) {
+                this.apiService.deleteArea(featureId).subscribe({
+                    next: () => this.zone.run(() => { if (this.vectorSource.hasFeature(typedFeature)) { this.vectorSource.removeFeature(typedFeature); } }),
+                    error: (err) => alert('Alan silinirken bir hata oluştu.')
+                });
+            }
+            return true;
+        });
+    });
   }
-
+  
   loadExistingAreas(): void {
     this.apiService.getAreas().subscribe({
-      next: (geoJsonData) => {
-        this.vectorSource.clear();
-        if (geoJsonData && geoJsonData.features && geoJsonData.features.length > 0) {
-          const format = new GeoJSON();
-          const features = format.readFeatures(geoJsonData, { featureProjection: 'EPSG:3857', dataProjection: 'EPSG:4326' });
-          features.forEach(feature => { const id = feature.get('id'); if (id) { feature.setId(id); } });
+      next: (data) => {
+        if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+          const geoJsonFormat = new GeoJSON();
+          const features = geoJsonFormat.readFeatures(data, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: this.map.getView().getProjection()
+          });
+          this.vectorSource.clear();
           this.vectorSource.addFeatures(features);
+        } else {
+          console.error("Hata: Sunucudan gelen alanlar verisi beklenen GeoJSON FeatureCollection formatında değil.", data);
+          this.vectorSource.clear();
         }
       },
-      error: (err) => {
-        console.error('Alanlar yüklenirken hata oluştu:', err);
-        if (err.status === 401) {
-          alert('Oturum süreniz doldu veya yetkiniz yok. Lütfen tekrar giriş yapın.');
-          this.router.navigate(['/auth']);
-        }
-      }
+      error: (err) => console.error('Alanlar yüklenirken sunucu hatası oluştu:', err)
     });
   }
 
-  haritaTiklamaEtkilesiminiAyarla(): void {
-    if (this.haritaTiklamaKey) return;
-    this.haritaTiklamaKey = this.map.on('click', (event) => {
-      this.map.forEachFeatureAtPixel(event.pixel, (featureLike) => {
-        const feature = featureLike as Feature<Geometry>;
-        if (feature.getId()) {
-          this.seciliFeature = feature;
-          if (this.etkilesimModu === 'delete-area') {
-            this.alaniSil();
-          } else if (this.etkilesimModu === 'edit-area') {
-            this.duzenlemeModaliAc(feature);
-          }
-        }
-        return true; 
-      });
-    });
-  }
-
-  alaniSil(): void {
-    if (!this.seciliFeature) return;
-    const featureId = this.seciliFeature.getId();
-    if(!featureId) return;
-
-    const featureName = this.seciliFeature.get('name') || `ID: ${featureId}`;
-    if (confirm(`'${featureName}' alanını silmek istediğinizden emin misiniz?`)) {
-      this.apiService.deleteArea(featureId.toString()).subscribe({
-        next: () => { 
-            alert('Alan başarıyla silindi.'); 
-            this.loadExistingAreas(); 
-            this.seciliFeature = null;
-        },
-        error: (err) => { 
-            console.error('Alan silinirken hata:', err); 
-            alert('Alan silinirken bir hata oluştu.'); 
-        }
-      });
+  public kaydetDuzenleme(): void {
+    if (!this.featureToEdit || !this.editName) {
+        alert('Alan adı boş bırakılamaz.');
+        return;
     }
+
+    const featureId = this.featureToEdit.get('id');
+    const geometry = this.featureToEdit.getGeometry();
+
+    if (!geometry) {
+      alert('Alan geometrisi bulunamadı.');
+      return;
+    }
+    
+    const wktFormat = new WKT();
+    const wktGeometry = wktFormat.writeGeometry(geometry, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: this.map.getView().getProjection()
+    });
+
+    const areaData = {
+        id: featureId,
+        name: this.editName,
+        description: this.editDescription,
+        wktGeometry: wktGeometry
+    };
+
+    this.apiService.updateArea(featureId, areaData).subscribe({
+        next: () => {
+            this.zone.run(() => {
+                this.featureToEdit?.set('name', this.editName);
+                this.featureToEdit?.set('description', this.editDescription);
+                
+                this.isEditPanelVisible = false;
+                this.featureToEdit = null;
+                this.originalGeometryForEdit = null;
+                this.select?.getFeatures().clear();
+                this.editName = '';
+                this.editDescription = '';
+
+                this.tumEtkilesimleriDurdur();
+            });
+        },
+        error: (err) => {
+          console.error('Alan güncellenirken hata:', err);
+          alert('Alan güncellenemedi. Sunucu tarafında bir hata oluşmuş olabilir. (Detaylar için konsolu kontrol edin)');
+        }
+    });
   }
 
-  duzenlemeModaliAc(feature: Feature<Geometry>): void {
-    this.seciliFeature = feature;
-    this.alanName = feature.get('name') || '';
-    this.alanDescription = feature.get('description') || '';
-    this.isModalVisible = true;
+  public iptalEtDuzenleme(): void {
+    if (this.featureToEdit && this.originalGeometryForEdit) {
+        this.featureToEdit.setGeometry(this.originalGeometryForEdit);
+    }
+    this.isEditPanelVisible = false;
+    this.featureToEdit = null;
+    this.originalGeometryForEdit = null;
+    this.select?.getFeatures().clear();
+    this.editName = '';
+    this.editDescription = '';
   }
-
-  tumEtkilesimleriDurdur(): void {
-    if (this.draw) this.map.removeInteraction(this.draw);
-    if (this.haritaTiklamaKey) { unByKey(this.haritaTiklamaKey); this.haritaTiklamaKey = null; }
-    this.etkilesimModu = 'none';
+  
+  public cizimiIptalEt(): void {
+    if (this.sonCizilenFeature && !this.sonCizilenFeature.get('id')) {
+      this.vectorSource.removeFeature(this.sonCizilenFeature);
+    }
+    this.isAddPanelVisible = false;
     this.sonCizilenFeature = null;
     this.cizilenGeoJsonString = '';
-    this.seciliFeature = null;
-  }
-
-  islemSonrasiTemizle(): void {
-    this.isModalVisible = false;
     this.alanName = '';
     this.alanDescription = '';
-    this.sonCizilenFeature = null;
-    this.seciliFeature = null;
   }
 
-  modaliKapat(): void {
-    if(this.sonCizilenFeature) { this.vectorSource.removeFeature(this.sonCizilenFeature); }
-    this.isModalVisible = false;
-    this.alanName = '';
-    this.alanDescription = '';
-    this.tumEtkilesimleriDurdur();
-  }
+  public alaniKaydet(): void {
+    if (!this.alanName) { alert('Alan adı boş bırakılamaz.'); return; }
+    if (!this.sonCizilenFeature) { alert('Kaydedilecek bir alan bulunamadı.'); return; }
+    
+    // GÜNCELLEME: `alaniKaydet` fonksiyonu, `CreateArea` endpoint'ine uyacak şekilde
+    // `geoJsonGeometry` gönderecek şekilde düzeltildi.
+    const areaData = { 
+        name: this.alanName, 
+        description: this.alanDescription, 
+        geoJsonGeometry: this.cizilenGeoJsonString
+    };
 
-  logout(): void { 
-    this.apiService.logout();
-  }
-
-  // **** YENİ FONKSİYON ****
-  // Hem Escape hem de Backspace tuşlarını yöneten yeni, birleşik fonksiyon.
-  handleKeyDown = (event: KeyboardEvent) => {
-    // Escape tuşuna basıldığında
-    if (event.key === 'Escape') {
-      if (this.isModalVisible) {
-        this.modaliKapat();
-      } else {
+    this.apiService.createArea(areaData).subscribe({
+      next: (yeniAlan) => this.zone.run(() => {
+        this.sonCizilenFeature?.set('id', yeniAlan.id);
+        this.sonCizilenFeature?.set('name', this.alanName);
+        this.sonCizilenFeature?.set('description', this.alanDescription);
         this.cizimiIptalEt();
+        this.tumEtkilesimleriDurdur();
+      }),
+      error: (err) => {
+          console.error("Alan kaydedilemedi:", err);
+          alert('Alan kaydedilemedi.');
       }
-    } 
-    // Backspace tuşuna basıldığında
-    else if (event.key === 'Backspace') {
-      // Sadece 'alan ekleme' modundaysak ve çizim etkileşimi aktifse çalışır.
-      if (this.etkilesimModu === 'add-area' && this.draw) {
-        // Tarayıcının bir önceki sayfaya gitmesini engelliyoruz.
-        event.preventDefault();
-        // Çizimdeki son noktayı kaldırıyoruz.
-        this.draw.removeLastPoint();
-      }
-    }
-  };
+    });
+  }
 
+  handleKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+        this.zone.run(() => {
+            if (this.isAddPanelVisible) { this.cizimiIptalEt(); }
+            if (this.isEditPanelVisible) { this.iptalEtDuzenleme(); }
+            this.closeInfoBox();
+            this.tumEtkilesimleriDurdur();
+        });
+    }
+  }
+
+  logout(): void { this.apiService.logout(); }
   ngOnDestroy(): void {
-    // Component kaldırıldığında dinleyiciyi de kaldırıyoruz.
-    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
     this.tumEtkilesimleriDurdur();
   }
 }

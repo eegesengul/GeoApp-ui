@@ -21,7 +21,10 @@ export class ApiService {
 
   private getAuthHeaders(): HttpHeaders {
     const token = localStorage.getItem('token');
-    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
   }
 
   // --- Auth Fonksiyonları ---
@@ -55,9 +58,8 @@ export class ApiService {
 
   // --- Alan (Area) Fonksiyonları ---
 
-  // **** DEĞİŞİKLİK BURADA ****
-  // createArea fonksiyonunun tip tanımını, `map.ts` ve backend (CreateAreaCommand) ile
-  // uyumlu olacak şekilde `geoJsonGeometry` olarak güncelliyoruz.
+  // GÜNCELLEME 1: `createArea` fonksiyonu, backend'in CreateAreaCommandHandler'ı ile uyumlu olacak
+  // şekilde tekrar 'geoJsonGeometry' kabul edecek şekilde düzeltildi.
   createArea(areaData: { name: string, description: string, geoJsonGeometry: string }): Observable<any> {
     return this.http.post(`${this.baseUrl}/Areas`, areaData, { headers: this.getAuthHeaders() });
   }
@@ -75,8 +77,9 @@ export class ApiService {
    * @param areaId Güncellenecek alanın ID'si.
    * @param areaData Güncelleme verilerini içeren nesne.
    */
-  updateArea(areaId: string, areaData: any): Observable<any> {
-    // Gelen veri nesnesini (id içeren) doğrudan body olarak gönderiyoruz.
+  // GÜNCELLEME 2: `updateArea` fonksiyonu, backend'in UpdateAreaCommandHandler'ı ile uyumlu
+  // olacak şekilde 'wktGeometry' kabul etmeye devam ediyor. Bu kısım doğruydu.
+  updateArea(areaId: string, areaData: { id: string; name: string; description: string; wktGeometry: string; }): Observable<any> {
     return this.http.put(`${this.baseUrl}/Areas/${areaId}`, areaData, { headers: this.getAuthHeaders() });
   }
 }
