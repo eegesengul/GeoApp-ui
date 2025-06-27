@@ -58,8 +58,6 @@ export class ApiService {
 
   // --- Alan (Area) Fonksiyonları ---
 
-  // GÜNCELLEME 1: `createArea` fonksiyonu, backend'in CreateAreaCommandHandler'ı ile uyumlu olacak
-  // şekilde tekrar 'geoJsonGeometry' kabul edecek şekilde düzeltildi.
   createArea(areaData: { name: string, description: string, geoJsonGeometry: string }): Observable<any> {
     return this.http.post(`${this.baseUrl}/Areas`, areaData, { headers: this.getAuthHeaders() });
   }
@@ -72,14 +70,25 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/Areas/${areaId}`, { headers: this.getAuthHeaders() });
   }
 
-  /**
-   * Alanı günceller.
-   * @param areaId Güncellenecek alanın ID'si.
-   * @param areaData Güncelleme verilerini içeren nesne.
-   */
-  // GÜNCELLEME 2: `updateArea` fonksiyonu, backend'in UpdateAreaCommandHandler'ı ile uyumlu
-  // olacak şekilde 'wktGeometry' kabul etmeye devam ediyor. Bu kısım doğruydu.
-  updateArea(areaId: string, areaData: { id: string; name: string; description: string; wktGeometry: string; }): Observable<any> {
+  updateArea(areaId: string, areaData: { id: string; name: string; description: string; wktGeometry?: string; }): Observable<any> {
     return this.http.put(`${this.baseUrl}/Areas/${areaId}`, areaData, { headers: this.getAuthHeaders() });
   }
+
+  //--- Nokta (Point) Fonksiyonları ---
+
+  createPoint(pointData: { name: string, description: string, geoJsonGeometry: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/Points`, pointData, { headers: this.getAuthHeaders() });
+  }
+
+  getPoints(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/Points`, { headers: this.getAuthHeaders() });
+  }
+
+  deletePoint(pointId: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/Points/${pointId}`, { headers: this.getAuthHeaders() });
+  }
+
+  updatePoint(pointId: string, pointData: { id: string; name: string; description: string; geoJsonGeometry?: string; }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/Points/${pointId}`, pointData, { headers: this.getAuthHeaders() });
+  }  
 }

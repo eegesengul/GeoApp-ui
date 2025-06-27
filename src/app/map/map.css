@@ -1,7 +1,15 @@
-/* Haritanın boyutunu küçülterek sayfaya tam sığmasını sağlıyoruz */
+/* YENİ: Harita ve kontrolleri içeren ana kapsayıcı */
+.map-container {
+  position: relative; /* İçindeki absolute konumlandırılmış elementler için referans noktası */
+  width: 99vw;      /* Tam ekran genişliği */
+  height: 98vh;     /* Tam ekran yüksekliği */
+  overflow: hidden;    /* Olası taşmaları ve kaydırma çubuklarını engelle */
+}
+
+/* DÜZENLEME: Harita artık kapsayıcısını %100 dolduracak */
 .map {
-  width: 99vw;
-  height: 97vh;
+  width: 100%;
+  height: 100%;
 }
 
 /* Çıkış Yap Butonu ve Menü Konteyneri */
@@ -9,108 +17,125 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 1000;
+  z-index: 1001; /* Diğer elementlerin üstünde kalması için z-index artırıldı */
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* Genel Buton Stilleri */
-button {
-  padding: 10px 15px;
-  font-size: 16px;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: background-color 0.2s;
-}
-button:hover {
-  filter: brightness(110%);
-}
-
-/* Farklı Buton Renkleri */
-.btn-logout { background-color: #dc3545; }
-.btn-save { background-color: #007bff; }
-.btn-cancel { background-color: #6c757d; }
-.btn-onayla { background-color: #28a745; }
-.btn-iptal { background-color: #ffc107; color: #212529; }
-
-/* Alan Bilgi Kutusu Stilleri */
-.info-box {
+/* Çizim Kontrol Paneli Stilleri */
+.drawing-controls {
   position: absolute;
-  top: 70px;
-  right: 10px;
-  width: 280px;
-  background-color: rgba(255, 255, 255, 0.95);
-  padding: 15px;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.75);
+  padding: 8px 15px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  z-index: 1000;
-  color: #333;
-  border-left: 5px solid #007bff;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-.info-box h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 18px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 8px;
-  color: #0056b3;
+.drawing-controls span {
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
 }
 
-.info-box p { margin: 0; font-size: 14px; line-height: 1.5; }
-
-.info-box .close-btn {
-  position: absolute; top: 5px; right: 10px; background: none; border: none;
-  font-size: 24px; font-weight: bold; color: #aaa; cursor: pointer;
-  padding: 0; box-shadow: none; line-height: 1;
-}
-.info-box .close-btn:hover { color: #333; }
-
-/* DÜZENLEME VE EKLEME PANELLERİ İÇİN ORTAK STİLLER */
-.edit-panel, .add-panel {
+/* BİRLEŞİK AKSİYON PANELİ STİLİ */
+.action-panel {
   position: absolute;
   top: 70px;
   left: 10px;
-  width: 280px;
-  background-color: rgba(255, 255, 255, 0.95);
+  width: 300px;
+  background-color: rgba(255, 255, 255, 0.98);
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
 }
 
-.edit-panel { border-left: 5px solid #ffc107; } /* Düzenleme rengi */
-.add-panel { border-left: 5px solid #28a745; } /* Ekleme rengi */
+/* Panel türüne göre sol kenar rengi */
+.action-panel.info-panel { border-left: 5px solid #007bff; }
+.action-panel.add-panel { border-left: 5px solid #28a745; }
+.action-panel.edit-panel { border-left: 5px solid #ffc107; }
 
-.edit-panel h3, .add-panel h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  font-size: 18px;
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   border-bottom: 1px solid #ddd;
   padding-bottom: 8px;
+  margin-bottom: 15px;
 }
 
-.edit-panel h3 { color: #c89600; }
-.add-panel h3 { color: #218838; }
+.panel-header h3 { margin: 0; font-size: 18px; }
+.info-panel .panel-header h3 { color: #0056b3; }
+.add-panel .panel-header h3 { color: #218838; }
+.edit-panel .panel-header h3 { color: #c89600; }
 
-.edit-panel .form-group, .add-panel .form-group { margin-bottom: 15px; }
+.panel-header .close-btn {
+  background: none; border: none; font-size: 24px; font-weight: bold;
+  color: #aaa; cursor: pointer; padding: 0; box-shadow: none; line-height: 1;
+}
+.panel-header .close-btn:hover { color: #333; }
 
-.edit-panel .form-group label, .add-panel .form-group label {
+.panel-content .info-description {
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.panel-content .form-group { margin-bottom: 15px; }
+.panel-content .form-group label {
   display: block; margin-bottom: 5px; font-weight: bold;
   color: #555; font-size: 14px;
 }
-
-.edit-panel .form-group input, .edit-panel .form-group textarea,
-.add-panel .form-group input, .add-panel .form-group textarea {
+.panel-content .form-group input, .panel-content .form-group textarea {
   width: 100%; padding: 8px; border: 1px solid #ccc;
   border-radius: 4px; box-sizing: border-box; font-size: 14px;
 }
 
-.edit-panel .panel-actions, .add-panel .panel-actions {
+.panel-actions {
   display: flex; justify-content: flex-end;
   gap: 10px; margin-top: 15px;
+}
+
+/* Genel Buton Stilleri */
+button {
+  padding: 10px 15px; font-size: 16px; color: white;
+  border: none; border-radius: 5px; cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: background-color 0.2s, transform 0.1s;
+}
+button:hover { filter: brightness(110%); }
+button:active { transform: translateY(1px); }
+
+/* Farklı Buton Renkleri */
+.btn-logout { background-color: #dc3545; }
+.btn-onayla { background-color: #28a745; }
+.btn-iptal { background-color: #6c757d; }
+.btn-undo { background-color: #ffc107; color: #212529; }
+.btn-cancel-draw { background-color: #dc3545; }
+
+/* Mod Durum Göstergesi Stili */
+.mode-indicator {
+  position: absolute;
+  /* DÜZENLEME: İsteğiniz üzerine biraz daha yukarı alındı */
+  bottom: 5px; 
+  left: 5px;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 8px;
+  z-index: 1000;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }

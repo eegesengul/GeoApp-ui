@@ -1,49 +1,52 @@
-<!-- Menü ve Çıkış Butonu -->
-<div class="logout-container">
-  <app-menu (featureSelected)="onFeatureSelected($event)"></app-menu>
-  <button (click)="logout()" class="btn-logout">Çıkış Yap</button>
-</div>
+<!-- YENİ: Tüm harita ve kontrolleri içeren ana kapsayıcı -->
+<div class="map-container">
 
-<!-- Haritanın gösterileceği ana alan -->
-<div id="map" class="map"></div>
+  <!-- Menü ve Çıkış Butonu -->
+  <div class="logout-container">
+    <app-menu (featureSelected)="onFeatureSelected($event)"></app-menu>
+    <button (click)="logout()" class="btn-logout">Çıkış Yap</button>
+  </div>
 
-<!-- ALAN BİLGİ KUTUSU -->
-<div class="info-box" *ngIf="isInfoBoxVisible && selectedFeatureInfo">
-  <button class="close-btn" (click)="closeInfoBox()">×</button>
-  <h3>{{ selectedFeatureInfo.name }}</h3>
-  <p>{{ selectedFeatureInfo.description }}</p>
-</div>
+  <!-- Çizim Kontrol Paneli -->
+  <div class="drawing-controls" *ngIf="isDrawingActive">
+    <span>{{ getDrawingModeText() }} Aktif</span>
+    <button *ngIf="etkilesimModu === 'add-area'" (click)="geriAlSonNokta()" class="btn-undo">Son Noktayı Geri Al</button>
+    <button (click)="tumEtkilesimleriDurdur()" class="btn-cancel-draw">İptal Et</button>
+  </div>
 
-<!-- ALAN DÜZENLEME PANELİ -->
-<div class="edit-panel" *ngIf="isEditPanelVisible">
-  <h3>Alanı Düzenle</h3>
-  <div class="form-group">
-    <label for="editName">Alan Adı:</label>
-    <input type="text" id="editName" [(ngModel)]="editName" name="editName">
+  <!-- Mod Durum Göstergesi -->
+  <div class="mode-indicator">
+    <span>{{ getModDurumuText() }}</span>
   </div>
-  <div class="form-group">
-    <label for="editDescription">Açıklama:</label>
-    <textarea id="editDescription" [(ngModel)]="editDescription" name="editDescription" rows="3"></textarea>
-  </div>
-  <div class="panel-actions">
-    <button class="btn-onayla" (click)="kaydetDuzenleme()">Kaydet</button>
-    <button class="btn-iptal" (click)="iptalEtDuzenleme()">İptal</button>
-  </div>
-</div>
 
-<!-- YENİ: ALAN EKLEME PANELİ -->
-<div class="add-panel" *ngIf="isAddPanelVisible">
-  <h3>Yeni Alan Ekle</h3>
-  <div class="form-group">
-    <label for="addName">Alan Adı:</label>
-    <input type="text" id="addName" [(ngModel)]="alanName" name="addName" placeholder="Örn: Evimin Bahçesi">
+  <!-- Haritanın gösterileceği ana alan -->
+  <div id="map" class="map"></div>
+
+  <!-- BİRLEŞİK AKSİYON PANELİ -->
+  <div class="action-panel" *ngIf="activePanel" [ngClass]="getPanelClass()">
+    <div class="panel-header">
+      <h3>{{ getPanelTitle() }}</h3>
+      <button class="close-btn" (click)="closeActivePanel()">×</button>
+    </div>
+    <div class="panel-content">
+      <ng-container *ngIf="activePanel === 'info' && selectedFeatureInfo">
+        <p class="info-description">{{ selectedFeatureInfo.description }}</p>
+      </ng-container>
+      <ng-container *ngIf="activePanel === 'add' || activePanel === 'edit'">
+        <div class="form-group">
+          <label for="nameInput">{{ isAreaMode() ? 'Alan' : 'Nokta' }} Adı:</label>
+          <input type="text" id="nameInput" [(ngModel)]="formName" name="nameInput" [placeholder]="isAreaMode() ? 'Örn: Evimin Bahçesi' : 'Örn: Buluşma Noktası'">
+        </div>
+        <div class="form-group">
+          <label for="descriptionInput">Açıklama:</label>
+          <textarea id="descriptionInput" [(ngModel)]="formDescription" name="descriptionInput" rows="3" [placeholder]="isAreaMode() ? 'Örn: Sulama yapılacak alan' : 'Örn: Kahve içilecek yer'"></textarea>
+        </div>
+      </ng-container>
+    </div>
+    <div class="panel-actions" *ngIf="activePanel !== 'info'">
+      <button class="btn-onayla" (click)="handleSave()">Kaydet</button>
+      <button class="btn-iptal" (click)="closeActivePanel()">İptal</button>
+    </div>
   </div>
-  <div class="form-group">
-    <label for="addDescription">Açıklama:</label>
-    <textarea id="addDescription" [(ngModel)]="alanDescription" name="addDescription" rows="3" placeholder="Örn: Sulama yapılacak alan"></textarea>
-  </div>
-  <div class="panel-actions">
-    <button class="btn-onayla" (click)="alaniKaydet()">Kaydet</button>
-    <button class="btn-iptal" (click)="cizimiIptalEt()">İptal</button>
-  </div>
-</div>
+
+</div> <!-- .map-container kapanışı -->

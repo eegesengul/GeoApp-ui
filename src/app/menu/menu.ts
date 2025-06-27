@@ -9,32 +9,47 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./menu.css']
 })
 export class MenuComponent {
-  // YENİ: Dışarıya 'featureName' (string) tipinde bir olay gönderecek olan EventEmitter'ı tanımlıyoruz.
   @Output() featureSelected = new EventEmitter<string>();
 
   isMenuOpen = false;
+  isAddOpen = false;
+  isEditOpen = false;
+  isDeleteOpen = false;
 
   constructor(private el: ElementRef) {}
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
+
+    // Menü kapandığında alt grupları da kapat
+    if (!this.isMenuOpen) {
+      this.isAddOpen = false;
+      this.isEditOpen = false;
+      this.isDeleteOpen = false;
+    }
+  }
+
+  toggleGroup(group: 'add' | 'edit' | 'delete') {
+    this.isAddOpen = group === 'add' ? !this.isAddOpen : false;
+    this.isEditOpen = group === 'edit' ? !this.isEditOpen : false;
+    this.isDeleteOpen = group === 'delete' ? !this.isDeleteOpen : false;
+  }
+
+  activateFeature(featureName: string): void {
+    this.featureSelected.emit(featureName);
+    this.isMenuOpen = false;
+    this.isAddOpen = false;
+    this.isEditOpen = false;
+    this.isDeleteOpen = false;
   }
 
   @HostListener('document:click', ['$event'])
   clickout(event: Event) {
     if (!this.el.nativeElement.contains(event.target)) {
       this.isMenuOpen = false;
+      this.isAddOpen = false;
+      this.isEditOpen = false;
+      this.isDeleteOpen = false;
     }
-  }
-
-  // GÜNCELLEME: Bu fonksiyon artık sadece olayı dışarıya gönderecek.
-  activateFeature(featureName: string | undefined): void {
-    if (!featureName) return;
-
-    // YENİ: Olayı, seçilen özelliğin adıyla ('add-area' veya 'view-areas') dışarıya gönderiyoruz.
-    this.featureSelected.emit(featureName);
-    
-    // Menüdeki bir butona tıklandıktan sonra menüyü otomatik olarak kapat.
-    this.isMenuOpen = false;
   }
 }
