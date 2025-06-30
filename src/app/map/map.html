@@ -29,8 +29,13 @@
       <button class="close-btn" (click)="closeActivePanel()">×</button>
     </div>
     <div class="panel-content">
+      <!-- Sadece bilgi panelinde düzenle ve sil butonları gösteriliyor -->
       <ng-container *ngIf="activePanel === 'info' && selectedFeatureInfo">
         <p class="info-description">{{ selectedFeatureInfo.description }}</p>
+        <div class="info-actions">
+          <button class="btn-edit" (click)="editSelectedFeature()">Düzenle</button>
+          <button class="btn-delete" (click)="deleteSelectedFeature()">Sil</button>
+        </div>
       </ng-container>
       <ng-container *ngIf="activePanel === 'add' || activePanel === 'edit'">
         <div class="form-group">
@@ -48,5 +53,17 @@
       <button class="btn-iptal" (click)="closeActivePanel()">İptal</button>
     </div>
   </div>
+
+  <!-- ... mevcut kodun sonuna ekle ... -->
+<div
+  *ngIf="contextMenuVisible"
+  class="custom-context-menu"
+  [style.left.px]="contextMenuX"
+  [style.top.px]="contextMenuY"
+  (contextmenu)="$event.preventDefault()"
+>
+  <button (click)="onContextEdit()">Düzenle</button>
+  <button (click)="onContextDelete()">Sil</button>
+</div>
 
 </div> <!-- .map-container kapanışı -->

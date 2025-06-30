@@ -127,7 +127,6 @@ button:active { transform: translateY(1px); }
 /* Mod Durum Göstergesi Stili */
 .mode-indicator {
   position: absolute;
-  /* DÜZENLEME: İsteğiniz üzerine biraz daha yukarı alındı */
   bottom: 5px; 
   left: 5px;
   background-color: rgba(0, 0, 0, 0.75);
@@ -138,4 +137,34 @@ button:active { transform: translateY(1px); }
   font-size: 14px;
   font-weight: bold;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* --- SAĞ TIK CONTEXT MENU BLOĞU BURADA OLMALI --- */
+.custom-context-menu {
+  position: fixed;
+  z-index: 1001;
+  background: #fff;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px #0002;
+  padding: 0.5em 0.7em;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.custom-context-menu button {
+  background: none;
+  border: none;
+  padding: 8px 12px;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  font-size: 1em;
+  color: #222;
+  border-radius: 4px;
+  transition: background 0.13s;
+}
+.custom-context-menu button:hover {
+  background: #007bff22;
 }

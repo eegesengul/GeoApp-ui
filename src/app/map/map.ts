@@ -7,7 +7,7 @@ import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, transform } from 'ol/proj';
 import Draw from 'ol/interaction/Draw';
 import { Feature } from 'ol';
 import { Style, Fill, Stroke, Circle as CircleStyle } from 'ol/style';
@@ -22,7 +22,7 @@ import { Geometry } from 'ol/geom';
 import Select from 'ol/interaction/Select';
 import Modify from 'ol/interaction/Modify';
 import { click } from 'ol/events/condition';
-import { transform } from 'ol/proj';
+import type { FeatureLike } from 'ol/Feature';
 
 type EtkilesimModu = 'add-area' | 'edit-area' | 'delete-area' | 'add-point' | 'edit-point' | 'delete-point' | 'none';
 type PanelType = 'info' | 'add' | 'edit' | null;
@@ -60,6 +60,13 @@ export class MapComponent implements OnInit, OnDestroy {
   public selectedFeatureInfo: { name: string, description: string, type: FeatureType } | null = null;
   private featureToEdit: Feature<Geometry> | null = null;
   private originalGeometryForEdit: Geometry | null = null;
+  public selectedFeatureId: string | null = null;
+
+  // -- YENİ: Sağ tık context menu için state
+  public contextMenuVisible = false;
+  public contextMenuX = 0;
+  public contextMenuY = 0;
+  public contextMenuFeature: Feature<Geometry> | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -68,43 +75,151 @@ export class MapComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    const areaStyle = new Style({ fill: new Fill({ color: 'rgba(0, 123, 255, 0.2)' }), stroke: new Stroke({ color: '#007bff', width: 2 }) });
     this.areaVectorSource = new VectorSource({ wrapX: false });
-    this.areaLayer = new VectorLayer({ source: this.areaVectorSource, style: areaStyle });
+    this.areaLayer = new VectorLayer({ 
+      source: this.areaVectorSource, 
+      style: feature => this.getFeatureStyle(feature)
+    });
 
-    const pointStyle = new Style({ image: new CircleStyle({ radius: 7, fill: new Fill({ color: '#28a745' }), stroke: new Stroke({ color: 'white', width: 2 }) }) });
     this.pointVectorSource = new VectorSource({ wrapX: false });
-    this.pointLayer = new VectorLayer({ source: this.pointVectorSource, style: pointStyle });
+    this.pointLayer = new VectorLayer({ 
+      source: this.pointVectorSource, 
+      style: feature => this.getFeatureStyle(feature)
+    });
 
     this.map = new Map({
       target: 'map',
       layers: [new TileLayer({ source: new OSM() }), this.areaLayer, this.pointLayer],
       view: new View({ center: fromLonLat([35.2433, 38.9637]), zoom: 6 })
     });
-    
+
     this.loadExistingAreas();
     this.loadExistingPoints();
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
 
+    // Sol tık ile info paneli aç ve seçili alanı vurgula
     this.map.on('click', (event) => {
       if (this.etkilesimModu !== 'none') return;
+      // Context menu açıksa kapat ve vurguyu kaldır
+      this.contextMenuVisible = false;
+      this.contextMenuFeature = null;
+      this.selectedFeatureId = null;
       const feature = this.map.forEachFeatureAtPixel(event.pixel, (f) => f as Feature<Geometry>);
       this.zone.run(() => {
         if (feature && feature.get('name')) {
           this.selectedFeatureInfo = {
             name: feature.get('name'),
             description: feature.get('description'),
-            type: feature.get('feature_type')
+            type: feature.get('feature_type') === 'area' ? 'area' : 'point'
           };
+          this.selectedFeatureId = feature.get('id') ?? null;
           this.activePanel = 'info';
+          this.areaVectorSource.changed();
+          this.pointVectorSource.changed();
         } else {
           this.closeActivePanel();
         }
       });
     });
+
+    // -- YENİ: Sağ tık ile context menu aç + VURGULAMA
+    this.map.getViewport().addEventListener('contextmenu', (event) => {
+      event.preventDefault();
+      const pixel = this.map.getEventPixel(event);
+      const feature = this.map.forEachFeatureAtPixel(pixel, f => f as Feature<Geometry>);
+      this.zone.run(() => {
+        if (feature) {
+          this.contextMenuVisible = true;
+          this.contextMenuX = event.clientX;
+          this.contextMenuY = event.clientY;
+          this.contextMenuFeature = feature;
+          this.selectedFeatureId = feature.get('id'); // VURGULAMA
+          this.areaVectorSource.changed();
+          this.pointVectorSource.changed();
+        } else {
+          this.contextMenuVisible = false;
+          this.contextMenuFeature = null;
+          this.selectedFeatureId = null; // VURGULAMA SIFIRLA
+          this.areaVectorSource.changed();
+          this.pointVectorSource.changed();
+        }
+      });
+    });
+
+    // -- YENİ: Menü dışında bir yere tıklanınca context menu ve vurguyu kapat
+    document.addEventListener('click', this.closeContextMenuOnClick);
   }
-  
-  // --- Panel ve Mod Yönetimi ---
+
+  // -- YENİ: Menü dışında tıklamada kapama + vurguyu kaldır
+  closeContextMenuOnClick = (event: MouseEvent) => {
+    if (this.contextMenuVisible) {
+      this.zone.run(() => {
+        this.contextMenuVisible = false;
+        this.contextMenuFeature = null;
+        this.selectedFeatureId = null; // VURGULAMA SIFIRLA
+        this.areaVectorSource.changed();
+        this.pointVectorSource.changed();
+      });
+    }
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    document.removeEventListener('click', this.closeContextMenuOnClick);
+    this.tumEtkilesimleriDurdur();
+  }
+
+  // -- YENİ: Sağ tık context menü butonları
+  onContextEdit() {
+    if (!this.contextMenuFeature) return;
+    const feature = this.contextMenuFeature;
+    const isArea = feature.get('feature_type') === 'area';
+    this.selectedFeatureId = feature.get('id');
+    this.selectedFeatureInfo = {
+      name: feature.get('name'),
+      description: feature.get('description'),
+      type: isArea ? 'area' : 'point'
+    };
+    this.contextMenuVisible = false;
+    this.contextMenuFeature = null;
+    this.editSelectedFeature();
+  }
+
+  onContextDelete() {
+    if (!this.contextMenuFeature) return;
+    const feature = this.contextMenuFeature;
+    const isArea = feature.get('feature_type') === 'area';
+    this.contextMenuVisible = false;
+    this.contextMenuFeature = null;
+    this.baslatSilme(
+      isArea ? this.areaVectorSource : this.pointVectorSource,
+      isArea ? 'area' : 'point',
+      feature.get('id')
+    );
+  }
+
+  getFeatureStyle(feature: FeatureLike): Style {
+    const isSelected = feature.get('id') && feature.get('id') === this.selectedFeatureId;
+    if (feature.get('feature_type') === 'area') {
+      return new Style({
+        stroke: new Stroke({
+          color: isSelected ? '#FF0000' : '#007bff',
+          width: isSelected ? 4 : 2
+        }),
+        fill: new Fill({
+          color: isSelected ? 'rgba(255, 0, 0, 0.1)' : 'rgba(0, 123, 255, 0.2)'
+        })
+      });
+    } else {
+      return new Style({
+        image: new CircleStyle({
+          radius: isSelected ? 10 : 7,
+          fill: new Fill({ color: isSelected ? '#FF0000' : '#28a745' }),
+          stroke: new Stroke({ color: '#fff', width: 2 })
+        })
+      });
+    }
+  }
 
   getPanelTitle(): string {
     const typeText = this.isAreaMode() ? 'Alan' : 'Nokta';
@@ -120,7 +235,6 @@ export class MapComponent implements OnInit, OnDestroy {
     return this.activePanel ? `${this.activePanel}-panel` : '';
   }
 
-   // YENİ: Haritanın sol altındaki mod durum metnini döndürür.
   public getModDurumuText(): string {
     switch (this.etkilesimModu) {
       case 'none':
@@ -147,7 +261,9 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   isAreaMode(): boolean {
-    if (this.activePanel === 'info') return this.selectedFeatureInfo?.type === 'area';
+    if (this.activePanel === 'info' || this.activePanel === 'edit') {
+      return this.selectedFeatureInfo?.type === 'area';
+    }
     return this.etkilesimModu.includes('area');
   }
 
@@ -178,28 +294,30 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   tumEtkilesimleriDurdur(): void {
-    this.resetDuzenlemePaneli(); // DÜZENLEME: `iptalEtDuzenleme` yerine bu çağrılıyor.
+    this.resetDuzenlemePaneli();
     this.cizimiIptalEt();
     if (this.draw) this.map.removeInteraction(this.draw);
     if (this.select) this.map.removeInteraction(this.select);
     if (this.modify) this.map.removeInteraction(this.modify);
     if (this.haritaTiklamaKey) { unByKey(this.haritaTiklamaKey); this.haritaTiklamaKey = null; }
-    
     if (this.areaLayer) this.areaLayer.setVisible(true);
     if (this.pointLayer) this.pointLayer.setVisible(true);
-
     this.etkilesimModu = 'none';
     this.isDrawingActive = false;
   }
-  
+
   closeActivePanel(): void {
     if (this.activePanel === 'add') this.cizimiIptalEt();
-    if (this.activePanel === 'edit') this.resetDuzenlemePaneli(); // DÜZENLEME: `iptalEtDuzenleme` yerine bu çağrılıyor.
+    if (this.activePanel === 'edit') this.resetDuzenlemePaneli();
     this.activePanel = null;
     this.selectedFeatureInfo = null;
+    this.selectedFeatureId = null;
+    this.areaVectorSource?.changed();
+    this.pointVectorSource?.changed();
+    // Menü panel açıldığında kapansın
+    this.contextMenuVisible = false;
+    this.contextMenuFeature = null;
   }
-
-  // --- Çizim (Create) Fonksiyonları ---
 
   baslatCizim(type: 'Polygon' | 'Point'): void {
     const source = type === 'Polygon' ? this.areaVectorSource : this.pointVectorSource;
@@ -229,8 +347,8 @@ export class MapComponent implements OnInit, OnDestroy {
 
   cizimiIptalEt(): void {
     if (this.sonCizilenFeature && !this.sonCizilenFeature.get('id')) {
-        const source = this.isAreaMode() ? this.areaVectorSource : this.pointVectorSource;
-        source.removeFeature(this.sonCizilenFeature);
+      const source = this.isAreaMode() ? this.areaVectorSource : this.pointVectorSource;
+      source.removeFeature(this.sonCizilenFeature);
     }
     this.sonCizilenFeature = null;
     this.cizilenGeoJsonString = '';
@@ -239,64 +357,106 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   baslatDuzenleme(source: VectorSource): void {
-  // Varsa önceki interaction'ları kaldır
-  if (this.select) this.map.removeInteraction(this.select);
-  if (this.modify) this.map.removeInteraction(this.modify);
+    if (this.select) this.map.removeInteraction(this.select);
+    if (this.modify) this.map.removeInteraction(this.modify);
 
-  const editStyle = new Style({
-    fill: new Fill({ color: 'rgba(255, 0, 0, 0.3)' }),
-    stroke: new Stroke({ color: 'red', width: 3 }),
-    image: new CircleStyle({
-      radius: 7,
+    const editStyle = new Style({
       fill: new Fill({ color: 'rgba(255, 0, 0, 0.3)' }),
-      stroke: new Stroke({ color: 'red', width: 2 })
-    })
-  });
-
-  this.select = new Select({ style: editStyle });
-  this.map.addInteraction(this.select);
-
-  // DİKKAT: Modify interaction'ı EKLENMİYOR!
-
-  this.select.on('select', (event) => {
-    this.zone.run(() => {
-      if (event.selected.length > 0) {
-        const selectedFeature = event.selected[0] as Feature<Geometry>;
-
-        if (source.hasFeature(selectedFeature)) {
-          this.featureToEdit = selectedFeature;
-          this.originalGeometryForEdit = selectedFeature.getGeometry()?.clone() ?? null;
-          this.formName = selectedFeature.get('name') || '';
-          this.formDescription = selectedFeature.get('description') || '';
-          this.activePanel = 'edit';
-        } else {
-          this.select?.getFeatures().clear();
-        }
-      } else {
-        this.closeActivePanel();
-      }
+      stroke: new Stroke({ color: 'red', width: 3 }),
+      image: new CircleStyle({
+        radius: 7,
+        fill: new Fill({ color: 'rgba(255, 0, 0, 0.3)' }),
+        stroke: new Stroke({ color: 'red', width: 2 })
+      })
     });
-  });
-}
 
+    this.select = new Select({ style: editStyle });
+    this.map.addInteraction(this.select);
 
-  // DÜZENLEME: `iptalEtDuzenleme` fonksiyonunun adı daha açıklayıcı olması için `resetDuzenlemePaneli` olarak değiştirildi.
-  // Bu fonksiyon artık hem düzenlemeyi iptal etmek hem de başarılı bir kayıttan sonra paneli temizlemek için kullanılıyor.
+    this.select.on('select', (event) => {
+      this.zone.run(() => {
+        if (event.selected.length > 0) {
+          const selectedFeature = event.selected[0] as Feature<Geometry>;
+          if (source.hasFeature(selectedFeature)) {
+            this.featureToEdit = selectedFeature;
+            this.originalGeometryForEdit = selectedFeature.getGeometry()?.clone() ?? null;
+            this.formName = selectedFeature.get('name') || '';
+            this.formDescription = selectedFeature.get('description') || '';
+            this.selectedFeatureInfo = {
+              name: selectedFeature.get('name'),
+              description: selectedFeature.get('description'),
+              type: selectedFeature.get('feature_type') === 'area' ? 'area' : 'point'
+            };
+            this.activePanel = 'edit';
+          } else {
+            this.select?.getFeatures().clear();
+          }
+        } else {
+          this.closeActivePanel();
+        }
+      });
+    });
+  }
+
   resetDuzenlemePaneli(): void {
     if (this.featureToEdit && this.originalGeometryForEdit) {
       this.featureToEdit.setGeometry(this.originalGeometryForEdit);
     }
-    this.activePanel = null; // Paneli kapat
+    this.activePanel = null;
     this.featureToEdit = null;
     this.originalGeometryForEdit = null;
-    this.select?.getFeatures().clear(); // Seçimi temizle
+    this.select?.getFeatures().clear();
     this.formName = '';
     this.formDescription = '';
   }
 
-  // --- Silme (Delete) Fonksiyonları ---
+  editSelectedFeature() {
+    if (!this.selectedFeatureId || !this.selectedFeatureInfo) return;
+    const isArea = this.selectedFeatureInfo.type === 'area';
+    const source = isArea ? this.areaVectorSource : this.pointVectorSource;
+    const feature = source.getFeatures().find(f => f.get('id') === this.selectedFeatureId);
+    if (feature) {
+      this.featureToEdit = feature;
+      this.originalGeometryForEdit = feature.getGeometry()?.clone() ?? null;
+      this.formName = feature.get('name') || '';
+      this.formDescription = feature.get('description') || '';
+      this.selectedFeatureInfo.type = isArea ? 'area' : 'point';
+      this.activePanel = 'edit';
+      // Menü panel açıldığında kapansın
+      this.contextMenuVisible = false;
+      this.contextMenuFeature = null;
+    }
+  }
 
-  baslatSilme(source: VectorSource, type: FeatureType): void {
+  deleteSelectedFeature() {
+    if (!this.selectedFeatureId || !this.selectedFeatureInfo) return;
+    if (confirm('Seçili alan/noktayı silmek istediğinizden emin misiniz?')) {
+      if (this.selectedFeatureInfo.type === 'area') {
+        this.baslatSilme(this.areaVectorSource, 'area', this.selectedFeatureId);
+      } else {
+        this.baslatSilme(this.pointVectorSource, 'point', this.selectedFeatureId);
+      }
+    }
+  }
+
+  baslatSilme(source: VectorSource, type: FeatureType, featureIdToDelete?: string): void {
+    if (featureIdToDelete) {
+      const feature = source.getFeatures().find(f => f.get('id') === featureIdToDelete);
+      if (feature) {
+        const name = feature.get('name');
+        if (confirm(`'${name}' adlı nesneyi silmek istediğinizden emin misiniz?`)) {
+          const deleteObservable = type === 'area' ? this.apiService.deleteArea(featureIdToDelete) : this.apiService.deletePoint(featureIdToDelete);
+          deleteObservable.subscribe({
+            next: () => this.zone.run(() => { 
+              source.removeFeature(feature); 
+              this.closeActivePanel();
+            }),
+            error: (err) => alert('Nesne silinirken bir hata oluştu.')
+          });
+        }
+      }
+      return;
+    }
     alert(`${type === 'area' ? 'Alan' : 'Nokta'} silmek için haritadan bir nesne seçin.`);
     this.haritaTiklamaKey = this.map.on('click', (event) => {
       this.map.forEachFeatureAtPixel(event.pixel, (feature) => {
@@ -306,8 +466,6 @@ export class MapComponent implements OnInit, OnDestroy {
           if (featureId && confirm(`'${typedFeature.get('name')}' adlı nesneyi silmek istediğinizden emin misiniz?`)) {
             const deleteObservable = type === 'area' ? this.apiService.deleteArea(featureId) : this.apiService.deletePoint(featureId);
             deleteObservable.subscribe({
-              // DÜZENLEME: Başarılı silme sonrası `tumEtkilesimleriDurdur` çağrısı kaldırıldı.
-              // Artık silme modunda kalmaya devam edilecek.
               next: () => this.zone.run(() => { 
                 source.removeFeature(typedFeature); 
                 console.log("Nesne silindi. Silmeye devam edebilirsiniz.");
@@ -322,13 +480,11 @@ export class MapComponent implements OnInit, OnDestroy {
     });
   }
 
-  // --- API ile Kaydetme ve Yükleme ---
-
   handleSave(): void {
     if (this.activePanel === 'add') {
-        this.isAreaMode() ? this.kaydetYeniAlan() : this.kaydetYeniNokta();
+      this.isAreaMode() ? this.kaydetYeniAlan() : this.kaydetYeniNokta();
     } else if (this.activePanel === 'edit') {
-        this.isAreaMode() ? this.kaydetAlanDuzenleme() : this.kaydetNoktaDuzenleme();
+      this.isAreaMode() ? this.kaydetAlanDuzenleme() : this.kaydetNoktaDuzenleme();
     }
   }
 
@@ -348,47 +504,38 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   kaydetAlanDuzenleme(): void {
-  if (!this.featureToEdit || !this.formName) return;
-
-  const featureId = this.featureToEdit.get('id');
-  const geometry = this.featureToEdit.getGeometry();
-  if (!geometry) return;
-
-  // Geometriyi EPSG:3857'den EPSG:4326'ya dönüştür
-  const clonedGeometry = geometry.clone();
-  clonedGeometry.applyTransform((coords, output, dim = 2) => {
-  for (let i = 0; i < coords.length; i += dim) {
-    const [lon, lat] = transform([coords[i], coords[i + 1]], 'EPSG:3857', 'EPSG:4326');
-    coords[i] = lon;
-    coords[i + 1] = lat;
+    if (!this.featureToEdit || !this.formName) return;
+    const featureId = this.featureToEdit.get('id');
+    const geometry = this.featureToEdit.getGeometry();
+    if (!geometry) return;
+    const clonedGeometry = geometry.clone();
+    clonedGeometry.applyTransform((coords, output, dim = 2) => {
+      for (let i = 0; i < coords.length; i += dim) {
+        const [lon, lat] = transform([coords[i], coords[i + 1]], 'EPSG:3857', 'EPSG:4326');
+        coords[i] = lon;
+        coords[i + 1] = lat;
+      }
+      return coords;
+    });
+    const wktFormat = new WKT();
+    const wktGeometry = wktFormat.writeGeometry(clonedGeometry, {
+      dataProjection: 'EPSG:4326'
+    });
+    const areaData = {
+      id: featureId,
+      name: this.formName,
+      description: this.formDescription,
+      wktGeometry
+    };
+    this.apiService.updateArea(featureId, areaData).subscribe({
+      next: () => this.zone.run(() => {
+        this.featureToEdit?.set('name', this.formName);
+        this.featureToEdit?.set('description', this.formDescription);
+        this.resetDuzenlemePaneli();
+      }),
+      error: (err) => alert('Alan güncellenemedi.')
+    });
   }
-  return coords;
-});
-
-  // Dönüştürülmüş geometriden WKT üret
-  const wktFormat = new WKT();
-  const wktGeometry = wktFormat.writeGeometry(clonedGeometry, {
-    dataProjection: 'EPSG:4326'
-  });
-
-  const areaData = {
-    id: featureId,
-    name: this.formName,
-    description: this.formDescription,
-    wktGeometry
-  };
-
-  this.apiService.updateArea(featureId, areaData).subscribe({
-    next: () => this.zone.run(() => {
-      this.featureToEdit?.set('name', this.formName);
-      this.featureToEdit?.set('description', this.formDescription);
-      this.resetDuzenlemePaneli();
-    }),
-    error: (err) => alert('Alan güncellenemedi.')
-  });
-}
-
-
 
   kaydetYeniNokta(): void {
     if (!this.formName || !this.sonCizilenFeature) return;
@@ -406,24 +553,22 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   kaydetNoktaDuzenleme(): void {
-  if (!this.featureToEdit || !this.formName) return;
-  const featureId = this.featureToEdit.get('id');
-  // GEOMETRİ OLUŞTURMUYORUZ!
-  const pointData = {
-    id: featureId,
-    name: this.formName,
-    description: this.formDescription
-    // geoJsonGeometry yok!
-  };
-  this.apiService.updatePoint(featureId, pointData).subscribe({
-    next: () => this.zone.run(() => {
-      this.featureToEdit?.set('name', this.formName);
-      this.featureToEdit?.set('description', this.formDescription);
-      this.resetDuzenlemePaneli();
-    }),
-    error: (err) => alert('Nokta güncellenemedi.')
-  });
-}
+    if (!this.featureToEdit || !this.formName) return;
+    const featureId = this.featureToEdit.get('id');
+    const pointData = {
+      id: featureId,
+      name: this.formName,
+      description: this.formDescription
+    };
+    this.apiService.updatePoint(featureId, pointData).subscribe({
+      next: () => this.zone.run(() => {
+        this.featureToEdit?.set('name', this.formName);
+        this.featureToEdit?.set('description', this.formDescription);
+        this.resetDuzenlemePaneli();
+      }),
+      error: (err) => alert('Nokta güncellenemedi.')
+    });
+  }
 
   loadExistingAreas(): void {
     this.apiService.getAreas().subscribe({
@@ -455,20 +600,17 @@ export class MapComponent implements OnInit, OnDestroy {
     });
   }
 
-  // --- Yardımcı Fonksiyonlar ---
-  
   handleKeyDown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       this.zone.run(() => {
         this.closeActivePanel();
         this.tumEtkilesimleriDurdur();
+        this.contextMenuVisible = false;
+        this.contextMenuFeature = null;
+        this.selectedFeatureId = null;
       });
     }
   }
 
   logout(): void { this.apiService.logout(); }
-  ngOnDestroy(): void {
-    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
-    this.tumEtkilesimleriDurdur();
-  }
 }
