@@ -1,0 +1,261 @@
+body, html {
+  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 0;
+  color: #232323;
+  min-height: 100vh;
+  font-size: 18px;
+}
+
+/* Paneli ortala, genişlet ve kutu kenarı ekle */
+.admin-panel {
+  max-width: 1100px;
+  min-width: 320px;
+  margin: 3.5em auto 2em auto;
+  background: #fff;
+  padding: 2.5em 2em 1.5em 2em;
+  border-radius: 18px;
+  border: 1px solid #e0e5ec;
+  width: 96vw;
+}
+
+/* Panel başlığı ve buton hizalama */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2em;
+  gap: 1em;
+}
+.admin-header h2 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 2.1em;
+  letter-spacing: -1px;
+  color: #1a2a46;
+}
+
+/* ARAMA PANELİ */
+.search-panel {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 1.5em;
+  padding: 0.7em 1em;
+  background: #f8fafb;
+  border-radius: 8px;
+  border: 1px solid #e0e5ec;
+}
+
+.search-panel input[type="text"] {
+  padding: 0.48em 1em;
+  border: 1px solid #ccd4df;
+  border-radius: 6px;
+  font-size: 1em;
+  width: 250px;
+  background: #fff;
+  font-family: inherit;
+  color: #232323;
+}
+
+.search-panel select {
+  padding: 0.48em 0.9em;
+  border: 1px solid #ccd4df;
+  border-radius: 6px;
+  font-size: 1em;
+  font-family: inherit;
+  background: #fff;
+  color: #232323;
+}
+
+.search-panel button.primary {
+  padding: 0.48em 1.3em;
+  border-radius: 6px;
+  font-size: 1em;
+  font-weight: 600;
+  margin-right: 0;
+  border: none;
+  background: #007bff;
+  color: #fff;
+  cursor: pointer;
+}
+.search-panel button.primary:hover {
+  background: #005fc5;
+}
+
+/* Responsive arama paneli */
+@media (max-width: 700px) {
+  .search-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 1em 0.5em;
+  }
+  .search-panel input[type="text"],
+  .search-panel select {
+    width: 100%;
+  }
+}
+
+/* Tablo ve diğer stiller */
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  background: #f8fafb;
+  padding: 0.6em 0.3em;
+  border: 1px solid #e0e5ec;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 1em;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e0e5ec;
+}
+th, td {
+  padding: 16px 10px;
+  border-bottom: 1px solid #e0e5ec;
+  text-align: left;
+  font-size: 1.08em;
+}
+th {
+  background: #f3f6fa;
+  font-weight: 650;
+  color: #2b3d52;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+tbody tr:hover {
+  background: #f6faff;
+}
+
+button {
+  padding: 0.48em 1.25em;
+  margin-right: 7px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1em;
+  font-family: inherit;
+  background: #f3f4f6;
+  color: #232323;
+  font-weight: 500;
+  outline: none;
+}
+button:last-child {
+  margin-right: 0;
+}
+button.primary {
+  background: #007bff;
+  color: #fff;
+  font-weight: 600;
+}
+button.primary:hover, .admin-header button.primary:focus {
+  background: #005fc5;
+}
+button.edit {
+  background: #ffc107;
+  color: #2d2100;
+  font-weight: 600;
+}
+button.edit:hover {
+  background: #c89600;
+  color: #fff;
+}
+button.delete {
+  background: #dc3545;
+  color: #fff;
+  font-weight: 600;
+}
+button.delete:hover {
+  background: #a71d2a;
+}
+
+.role-badge {
+  padding: 0.33em 1em;
+  border-radius: 13px;
+  font-size: 1em;
+  color: #fff;
+  font-weight: 600;
+  display: inline-block;
+  letter-spacing: 0.2px;
+}
+.admin-badge {
+  background: #007bff;
+}
+.user-badge {
+  background: #888;
+}
+
+.modal {
+  position: fixed;
+  left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.25);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  padding: 2em 2.5em 1.5em 2.5em;
+  border-radius: 12px;
+  min-width: 320px;
+  max-width: 98vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid #e0e5ec;
+}
+.modal-content h3 {
+  margin-top: 0;
+  font-size: 1.4em;
+  color: #005fc5;
+}
+.modal-content form label,
+.modal-content label {
+  display: block;
+  margin-bottom: 0.7em;
+  margin-top: 0.5em;
+  font-size: 1em;
+  color: #253044;
+  font-weight: 600;
+}
+.modal-content input, .modal-content select {
+  width: 100%;
+  padding: 0.45em;
+  margin-top: 0.2em;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  margin-bottom: 0.5em;
+  font-size: 1em;
+  background: #f6fafd;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1em;
+}
+
+.not-allowed {
+  max-width: 420px;
+  margin: 7em auto 0 auto;
+  padding: 2.2em 1.2em;
+  background: #fff4f4;
+  border: 1px solid #ffdadb;
+  border-radius: 10px;
+  text-align: center;
+  color: #d32f2f;
+  font-size: 1.09em;
+}
+.not-allowed .icon {
+  font-size: 2.6em;
+  margin-bottom: 0.55em;
+  display: block;
+}

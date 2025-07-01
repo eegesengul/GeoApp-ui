@@ -1,29 +1,195 @@
-/* YENİ: Harita ve kontrolleri içeren ana kapsayıcı */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Harita ve kontrolleri içeren ana kapsayıcı */
 .map-container {
-  position: relative; /* İçindeki absolute konumlandırılmış elementler için referans noktası */
-  width: 99vw;      /* Tam ekran genişliği */
-  height: 98vh;     /* Tam ekran yüksekliği */
-  overflow: hidden;    /* Olası taşmaları ve kaydırma çubuklarını engelle */
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #e9ecef;
 }
 
-/* DÜZENLEME: Harita artık kapsayıcısını %100 dolduracak */
+/* Harita artık kapsayıcısını %100 dolduracak */
 .map {
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  inset: 0;
 }
 
-/* Çıkış Yap Butonu ve Menü Konteyneri */
-.logout-container {
+/* --------- SAĞ ÜST ANA MENÜ BAR (Ekle + Admin + Profil) --------- */
+.topbar-menu-container {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1001; /* Diğer elementlerin üstünde kalması için z-index artırıldı */
+  top: 16px;
+  right: 16px;
+  z-index: 1100;
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* Çizim Kontrol Paneli Stilleri */
+/* --------- PROFİL DROPDOWN MENÜ --------- */
+.profile-dropdown-container {
+  position: relative; /* artık absolute değil, flex içinde */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.profile-menu {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  background: #f5f7fa;
+  padding: 0.45em 1.4em 0.45em 1.2em;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid #e0e5ec;
+  font-size: 1em;
+  font-weight: 600;
+  color: #1a2a46;
+  transition: background .13s, border .13s;
+  box-shadow: 0 1px 6px #0001;
+  min-width: 160px;
+  user-select: none;
+}
+.profile-menu:hover {
+  background: #e8f0fe;
+  border-color: #b4cdfa;
+}
+.profile-icon {
+  font-size: 1.3em;
+}
+.profile-name {
+  font-size: 1em;
+  font-weight: 500;
+  margin-right: 0.4em;
+}
+.dropdown-arrow {
+  font-size: 1.05em;
+  margin-left: 0.1em;
+}
+
+/* Dropdown içeriği */
+.profile-dropdown {
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #e0e5ec;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(30,48,90,0.08);
+  min-width: 180px;
+  padding: 7px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: absolute;
+  top: 100%;
+  right: 0;
+}
+.profile-dropdown button {
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1em;
+  color: #1a2a46;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s;
+  border-radius: 6px;
+}
+.profile-dropdown button:hover {
+  background: #e8f0fe;
+  color: #007bff;
+}
+
+/* --------- MODAL ORTAK --------- */
+.modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.22);
+  z-index: 2001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 28px 22px 28px;
+  min-width: 320px;
+  min-height: 180px;
+  box-shadow: 0 4px 24px #0002;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.modal-content h3 {
+  margin: 0 0 10px 0;
+  font-size: 23px;
+  font-weight: 700;
+  color: #1a2a46;
+  text-align: left;
+}
+.modal-content label {
+  font-size: 15px;
+  font-weight: 500;
+  color: #2c3a4f;
+  margin-bottom: 7px;
+  display: block;
+}
+.modal-content input, .modal-content textarea {
+  width: 100%;
+  border: 1px solid #cbd2e1;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 15px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 7px;
+}
+.modal-actions button.primary {
+  background: #007bff;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 22px;
+  cursor: pointer;
+  font-size: 15px;
+  box-shadow: 0 2px 5px #007bff22;
+  transition: background 0.13s;
+}
+.modal-actions button.primary:hover {
+  background: #0056b3;
+}
+.modal-actions button {
+  background: #e0e5ec;
+  color: #222;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 22px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.13s, color 0.13s;
+}
+.modal-actions button:hover:not(.primary) {
+  background: #cbd2e1;
+  color: #007bff;
+}
+
+/* --------- Harita kontrol panelleri, context menu vs. eski haliyle devam --------- */
 .drawing-controls {
   position: absolute;
   top: 10px;
@@ -38,14 +204,11 @@
   gap: 15px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
-
 .drawing-controls span {
   color: white;
   font-weight: bold;
   font-size: 16px;
 }
-
-/* BİRLEŞİK AKSİYON PANELİ STİLİ */
 .action-panel {
   position: absolute;
   top: 70px;
@@ -59,12 +222,9 @@
   display: flex;
   flex-direction: column;
 }
-
-/* Panel türüne göre sol kenar rengi */
 .action-panel.info-panel { border-left: 5px solid #007bff; }
 .action-panel.add-panel { border-left: 5px solid #28a745; }
 .action-panel.edit-panel { border-left: 5px solid #ffc107; }
-
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -73,25 +233,21 @@
   padding-bottom: 8px;
   margin-bottom: 15px;
 }
-
 .panel-header h3 { margin: 0; font-size: 18px; }
 .info-panel .panel-header h3 { color: #0056b3; }
 .add-panel .panel-header h3 { color: #218838; }
 .edit-panel .panel-header h3 { color: #c89600; }
-
 .panel-header .close-btn {
   background: none; border: none; font-size: 24px; font-weight: bold;
   color: #aaa; cursor: pointer; padding: 0; box-shadow: none; line-height: 1;
 }
 .panel-header .close-btn:hover { color: #333; }
-
 .panel-content .info-description {
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-
 .panel-content .form-group { margin-bottom: 15px; }
 .panel-content .form-group label {
   display: block; margin-bottom: 5px; font-weight: bold;
@@ -101,13 +257,44 @@
   width: 100%; padding: 8px; border: 1px solid #ccc;
   border-radius: 4px; box-sizing: border-box; font-size: 14px;
 }
-
 .panel-actions {
   display: flex; justify-content: flex-end;
   gap: 10px; margin-top: 15px;
 }
-
-/* Genel Buton Stilleri */
+.info-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.btn-edit {
+  background: #ffc107;
+  color: #212529;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.13);
+}
+.btn-edit:hover {
+  background: #c89600;
+  color: #fff;
+}
+.btn-delete {
+  background: #dc3545;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.14s;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.13);
+}
+.btn-delete:hover {
+  background: #a71d2a;
+}
 button {
   padding: 10px 15px; font-size: 16px; color: white;
   border: none; border-radius: 5px; cursor: pointer;
@@ -116,15 +303,11 @@ button {
 }
 button:hover { filter: brightness(110%); }
 button:active { transform: translateY(1px); }
-
-/* Farklı Buton Renkleri */
 .btn-logout { background-color: #dc3545; }
 .btn-onayla { background-color: #28a745; }
 .btn-iptal { background-color: #6c757d; }
 .btn-undo { background-color: #ffc107; color: #212529; }
 .btn-cancel-draw { background-color: #dc3545; }
-
-/* Mod Durum Göstergesi Stili */
 .mode-indicator {
   position: absolute;
   bottom: 5px; 
@@ -138,8 +321,6 @@ button:active { transform: translateY(1px); }
   font-weight: bold;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
-
-/* --- SAĞ TIK CONTEXT MENU BLOĞU BURADA OLMALI --- */
 .custom-context-menu {
   position: fixed;
   z-index: 1001;
@@ -167,4 +348,26 @@ button:active { transform: translateY(1px); }
 }
 .custom-context-menu button:hover {
   background: #007bff22;
+}
+.feature-menu-button {
+  background: #007bff;
+  color: #fff;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 17px;
+  box-shadow: 0 2px 8px #0001;
+  transition: background 0.15s;
+}
+.feature-menu-button:hover {
+  background: #0056b3;
+}
+.btn-admin {
+  background: #f07c00;
+  color: #fff;
+}
+.btn-admin:hover {
+  background: #b85d00;
 }

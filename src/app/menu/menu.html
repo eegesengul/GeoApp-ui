@@ -1,28 +1,11 @@
 <div class="feature-menu">
-  <button (click)="toggleMenu()" class="feature-menu-button">Özellikler</button>
-
+  <button (click)="toggleMenu()" class="feature-menu-button">Ekle</button>
   <div class="feature-list" [class.show]="isMenuOpen">
-    
-    <!-- EKLE -->
-    <div class="feature-group-header" (click)="toggleGroup('add')">EKLE</div>
-    <div *ngIf="isAddOpen">
-      <button class="feature-item" (click)="activateFeature('add-area')">Alan Ekle</button>
-      <button class="feature-item" (click)="activateFeature('add-point')">Nokta Ekle</button>
-    </div>
-
-    <!-- DÜZENLE -->
-    <div class="feature-group-header" (click)="toggleGroup('edit')">DÜZENLE</div>
-    <div *ngIf="isEditOpen">
-      <button class="feature-item" (click)="activateFeature('edit-area')">Alanı Düzenle</button>
-      <button class="feature-item" (click)="activateFeature('edit-point')">Noktayı Düzenle</button>
-    </div>
-
-    <!-- SİL -->
-    <div class="feature-group-header" (click)="toggleGroup('delete')">SİL</div>
-    <div *ngIf="isDeleteOpen">
-      <button class="feature-item" (click)="activateFeature('delete-area')">Alanı Sil</button>
-      <button class="feature-item" (click)="activateFeature('delete-point')">Noktayı Sil</button>
-    </div>
-
+    <button class="feature-item" (click)="activateFeature('add-area')">
+      Alan Ekle
+    </button>
+    <button class="feature-item" (click)="activateFeature('add-point')">
+      Nokta Ekle
+    </button>
   </div>
 </div>

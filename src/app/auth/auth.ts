@@ -23,9 +23,7 @@ export class AuthComponent implements OnInit {
     private router: Router
   ) { }
 
-  ngOnInit(): void {
-    // Çıkış yapma mantığı artık ApiService içinde olduğu için burası boş.
-  }
+  ngOnInit(): void {}
 
   toggleMode() {
     this.isLoginMode = !this.isLoginMode;

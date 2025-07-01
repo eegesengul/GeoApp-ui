@@ -28,6 +28,14 @@ type EtkilesimModu = 'add-area' | 'edit-area' | 'delete-area' | 'add-point' | 'e
 type PanelType = 'info' | 'add' | 'edit' | null;
 type FeatureType = 'area' | 'point';
 
+// Kullanıcı modelini daha geniş tut (id dahil)
+interface CurrentUser {
+  id: string;
+  username: string;
+  email: string;
+  role?: string;
+}
+
 @Component({
   selector: 'app-map',
   standalone: true,
@@ -62,14 +70,22 @@ export class MapComponent implements OnInit, OnDestroy {
   private originalGeometryForEdit: Geometry | null = null;
   public selectedFeatureId: string | null = null;
 
-  // -- YENİ: Sağ tık context menu için state
+  // -- Sağ tık context menu için state
   public contextMenuVisible = false;
   public contextMenuX = 0;
   public contextMenuY = 0;
   public contextMenuFeature: Feature<Geometry> | null = null;
 
+  // --- PROFİL DROPDOWN STATE ---
+  isProfileDropdownOpen = false;
+  isProfileModalOpen = false;
+  currentUser: CurrentUser | null = null;
+  profileUsername = '';
+  profileEmail = '';
+  profilePassword = '';
+
   constructor(
-    private apiService: ApiService,
+    public apiService: ApiService,
     private router: Router,
     private zone: NgZone
   ) {}
@@ -122,7 +138,7 @@ export class MapComponent implements OnInit, OnDestroy {
       });
     });
 
-    // -- YENİ: Sağ tık ile context menu aç + VURGULAMA
+    // Sağ tık ile context menu aç + vurgulama
     this.map.getViewport().addEventListener('contextmenu', (event) => {
       event.preventDefault();
       const pixel = this.map.getEventPixel(event);
@@ -146,11 +162,42 @@ export class MapComponent implements OnInit, OnDestroy {
       });
     });
 
-    // -- YENİ: Menü dışında bir yere tıklanınca context menu ve vurguyu kapat
+    // Menü dışında bir yere tıklanınca context menu ve vurguyu kapat
     document.addEventListener('click', this.closeContextMenuOnClick);
+
+    // Dropdown dışında tıklanınca profil açılır menüyü kapat
+    document.addEventListener('click', this.closeProfileDropdownOnClick);
+
+    // Profil menüsü için kullanıcıyı yükle
+    this.loadCurrentUser();
   }
 
-  // -- YENİ: Menü dışında tıklamada kapama + vurguyu kaldır
+  ngOnDestroy(): void {
+    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    document.removeEventListener('click', this.closeContextMenuOnClick);
+    document.removeEventListener('click', this.closeProfileDropdownOnClick);
+    this.tumEtkilesimleriDurdur();
+  }
+
+  // Dropdown dışında tıklanınca kapansın
+  closeProfileDropdownOnClick = (event: MouseEvent) => {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.profile-dropdown-container')) {
+      this.isProfileDropdownOpen = false;
+    }
+  }
+
+  // PROFİL DROPDOWN FONKSİYONLARI
+  toggleProfileDropdown() {
+    this.isProfileDropdownOpen = !this.isProfileDropdownOpen;
+  }
+
+  openProfileModal() {
+    this.isProfileModalOpen = true;
+    this.isProfileDropdownOpen = false;
+  }
+
+  // Menü dışında tıklamada kapama + vurguyu kaldır
   closeContextMenuOnClick = (event: MouseEvent) => {
     if (this.contextMenuVisible) {
       this.zone.run(() => {
@@ -163,13 +210,9 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
-    document.removeEventListener('click', this.closeContextMenuOnClick);
-    this.tumEtkilesimleriDurdur();
-  }
+  // ... (aşağıdaki kodlar değişmeden devam ediyor, sadece profil menüsü ilgili kısımlar güncellendi) ...
 
-  // -- YENİ: Sağ tık context menü butonları
+  // Sağ tık context menü butonları
   onContextEdit() {
     if (!this.contextMenuFeature) return;
     const feature = this.contextMenuFeature;
@@ -611,6 +654,40 @@ export class MapComponent implements OnInit, OnDestroy {
       });
     }
   }
+  
+  get isAdminUser(): boolean {
+    return this.apiService.isAdmin();
+  }
+  
+  goToAdmin() {
+    this.router.navigate(['/admin']);
+  }
 
-  logout(): void { this.apiService.logout(); }
+  logout(): void { 
+    this.apiService.logout(); 
+  }
+
+  // --- PROFİL MENÜSÜ YARDIMCI FONKSİYONLAR ---
+  loadCurrentUser() {
+    this.apiService.getCurrentUser().subscribe(user => {
+      this.currentUser = user;
+      this.profileUsername = user.username;
+      this.profileEmail = user.email;
+    });
+  }
+
+  saveProfile() {
+    if (!this.currentUser) return;
+    const updated = {
+      id: this.currentUser.id, // id'yi backend'e gönderiyoruz, UI'da göstermiyoruz
+      username: this.profileUsername,
+      email: this.profileEmail,
+      password: this.profilePassword || undefined
+    };
+    this.apiService.updateCurrentUser(updated).subscribe(() => {
+      this.isProfileModalOpen = false;
+      this.loadCurrentUser();
+      this.profilePassword = '';
+    });
+  }
 }

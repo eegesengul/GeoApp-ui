@@ -1,8 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { tap, map, catchError } from 'rxjs/operators';
+
+export interface CurrentUser {
+  id: string;
+  username: string;
+  email: string;
+  role?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -90,5 +97,58 @@ export class ApiService {
 
   updatePoint(pointId: string, pointData: { id: string; name: string; description: string; geoJsonGeometry?: string; }): Observable<any> {
     return this.http.put(`${this.baseUrl}/Points/${pointId}`, pointData, { headers: this.getAuthHeaders() });
-  }  
+  }
+
+  // --- Admin Kullanıcı Yönetimi Fonksiyonları ---
+
+  getUsers(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/Users`, { headers: this.getAuthHeaders() });
+  }
+
+  updateUser(userId: string, userData: { username: string; email: string; role: string; }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/Users/${userId}`, userData, { headers: this.getAuthHeaders() });
+  }
+
+  deleteUser(userId: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/Users/${userId}`, { headers: this.getAuthHeaders() });
+  }
+
+  // --- Profil (Bilgilerim) Fonksiyonları ---
+  getCurrentUser(): Observable<CurrentUser> {
+    return this.http.get<CurrentUser>(`${this.baseUrl}/Users/me`, { headers: this.getAuthHeaders() }).pipe(
+      catchError(err => {
+        if (err.status === 401 || err.status === 403) {
+          this.logout();
+        }
+        throw err;
+      })
+    );
+  }
+
+  updateCurrentUser(data: { id: string, username: string, email: string, password?: string }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/Users/me`, data, { headers: this.getAuthHeaders() });
+  }
+
+  // --- Rol Kontrolü ---
+
+  // JWT decode (fallback, eğer endpoint'ten alınamıyorsa)
+  private getUserFromToken(): { id?: string, username: string, email: string, role?: string, [key: string]: any } | null {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    const [, payload, ] = token.split('.');
+    try {
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  isAdmin(): boolean {
+    const user = this.getUserFromToken();
+    if (!user) return false;
+    const msRole = user['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    return (user.role && user.role.toLowerCase() === 'admin') ||
+           (msRole && msRole.toLowerCase() === 'admin');
+  }
 }

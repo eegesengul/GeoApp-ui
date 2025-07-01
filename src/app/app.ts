@@ -1,34 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MapComponent } from './map/map';
-import { AuthComponent } from './auth/auth';
-import { ApiService } from './services/api';
-import { Subscription } from 'rxjs';
-// KALDIRILDI: import { MenuComponent } from './menu/menu';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  // KALDIRILDI: MenuComponent buradan kaldırıldı
-  imports: [CommonModule, MapComponent, AuthComponent], 
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrls: ['./app.css']
 })
-export class AppComponent implements OnInit, OnDestroy {
-  isLoggedIn = false;
-  private authSubscription!: Subscription;
-
-  constructor(private apiService: ApiService) {}
-
-  ngOnInit() {
-    this.authSubscription = this.apiService.isLoggedIn$.subscribe(status => {
-      this.isLoggedIn = status;
-    });
-  }
-
-  ngOnDestroy() {
-    if (this.authSubscription) {
-      this.authSubscription.unsubscribe();
-    }
-  }
-}
+export class AppComponent {}

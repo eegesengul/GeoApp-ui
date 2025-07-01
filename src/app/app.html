@@ -1,8 +1,1 @@
-<!-- Kullanıcı giriş yapmışsa haritayı göster -->
-<div *ngIf="isLoggedIn">
-  <app-map></app-map>
-  <!-- <app-menu></app-menu> satırı buradan kaldırıldı -->
-</div>
-
-<!-- Kullanıcı giriş yapmamışsa kimlik doğrulama formunu göster -->
-<app-auth *ngIf="!isLoggedIn"></app-auth>
+<router-outlet></router-outlet>

@@ -1,10 +1,57 @@
-<!-- YENİ: Tüm harita ve kontrolleri içeren ana kapsayıcı -->
 <div class="map-container">
 
-  <!-- Menü ve Çıkış Butonu -->
-  <div class="logout-container">
+  <!-- SAĞ ÜST ANA MENÜ BAR (Ekle + Admin + Profil) -->
+  <div class="topbar-menu-container">
+    <!-- Ekle (app-menu) -->
     <app-menu (featureSelected)="onFeatureSelected($event)"></app-menu>
-    <button (click)="logout()" class="btn-logout">Çıkış Yap</button>
+
+    <!-- Admin için Kullanıcı Yönetimi butonu -->
+    <button 
+      *ngIf="apiService.isAdmin()" 
+      (click)="goToAdmin()"
+      class="feature-menu-button btn-admin"
+      style="margin-left:8px;"
+    >
+      Kullanıcı Yönetimi
+    </button>
+
+    <!-- Profil Menü Dropdown -->
+    <div class="profile-dropdown-container">
+      <div class="profile-menu" (click)="toggleProfileDropdown()">
+        <span class="profile-icon">👤</span>
+        <span class="profile-name">Merhaba {{currentUser?.username}}</span>
+        <span class="dropdown-arrow">▼</span>
+      </div>
+      <div class="profile-dropdown" *ngIf="isProfileDropdownOpen">
+        <button (click)="openProfileModal()">Bilgilerimi Düzenle</button>
+        <button (click)="logout()">Çıkış Yap</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFİL MODALI -->
+  <div class="modal" *ngIf="isProfileModalOpen">
+    <div class="modal-content">
+      <h3>Bilgilerim</h3>
+      <form (ngSubmit)="saveProfile()">
+        <label>
+          Kullanıcı Adı:
+          <input [(ngModel)]="profileUsername" name="profileUsername" required />
+        </label>
+        <label>
+          E-posta:
+          <input [(ngModel)]="profileEmail" name="profileEmail" type="email" required />
+        </label>
+        <label>
+          Şifre:
+          <input [(ngModel)]="profilePassword" name="profilePassword" type="password" placeholder="Yeni şifre (değiştirmek için)" />
+        </label>
+        <div class="modal-actions">
+          <button type="submit" class="primary">Güncelle</button>
+          <button type="button" (click)="isProfileModalOpen=false">Kapat</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Çizim Kontrol Paneli -->
@@ -29,7 +76,6 @@
       <button class="close-btn" (click)="closeActivePanel()">×</button>
     </div>
     <div class="panel-content">
-      <!-- Sadece bilgi panelinde düzenle ve sil butonları gösteriliyor -->
       <ng-container *ngIf="activePanel === 'info' && selectedFeatureInfo">
         <p class="info-description">{{ selectedFeatureInfo.description }}</p>
         <div class="info-actions">
@@ -54,16 +100,15 @@
     </div>
   </div>
 
-  <!-- ... mevcut kodun sonuna ekle ... -->
-<div
-  *ngIf="contextMenuVisible"
-  class="custom-context-menu"
-  [style.left.px]="contextMenuX"
-  [style.top.px]="contextMenuY"
-  (contextmenu)="$event.preventDefault()"
->
-  <button (click)="onContextEdit()">Düzenle</button>
-  <button (click)="onContextDelete()">Sil</button>
+  <!-- Sağ tık context menu -->
+  <div
+    *ngIf="contextMenuVisible"
+    class="custom-context-menu"
+    [style.left.px]="contextMenuX"
+    [style.top.px]="contextMenuY"
+    (contextmenu)="$event.preventDefault()"
+  >
+    <button (click)="onContextEdit()">Düzenle</button>
+    <button (click)="onContextDelete()">Sil</button>
+  </div>
 </div>
-
-</div> <!-- .map-container kapanışı -->
