@@ -23,12 +23,12 @@ import Select from 'ol/interaction/Select';
 import Modify from 'ol/interaction/Modify';
 import { click } from 'ol/events/condition';
 import type { FeatureLike } from 'ol/Feature';
+import { ScaleLine } from 'ol/control';
 
 type EtkilesimModu = 'add-area' | 'edit-area' | 'delete-area' | 'add-point' | 'edit-point' | 'delete-point' | 'none';
 type PanelType = 'info' | 'add' | 'edit' | null;
 type FeatureType = 'area' | 'point';
 
-// Kullanıcı modelini daha geniş tut (id dahil)
 interface CurrentUser {
   id: string;
   username: string;
@@ -69,14 +69,15 @@ export class MapComponent implements OnInit, OnDestroy {
   private featureToEdit: Feature<Geometry> | null = null;
   private originalGeometryForEdit: Geometry | null = null;
   public selectedFeatureId: string | null = null;
+  
+  private hoveredFeatureId: string | null = null;
+  public currentZoom: number | undefined = 0;
 
-  // -- Sağ tık context menu için state
   public contextMenuVisible = false;
   public contextMenuX = 0;
   public contextMenuY = 0;
   public contextMenuFeature: Feature<Geometry> | null = null;
 
-  // --- PROFİL DROPDOWN STATE ---
   isProfileDropdownOpen = false;
   isProfileModalOpen = false;
   currentUser: CurrentUser | null = null;
@@ -108,15 +109,48 @@ export class MapComponent implements OnInit, OnDestroy {
       layers: [new TileLayer({ source: new OSM() }), this.areaLayer, this.pointLayer],
       view: new View({ center: fromLonLat([35.2433, 38.9637]), zoom: 6 })
     });
+    
+    // GÜNCELLENDİ: Ölçek çizgisi kontrolünü oluştururken hedef div'i belirt
+    const scaleControl = new ScaleLine({
+      units: 'metric',
+      bar: true,
+      steps: 4,
+      text: true,
+      minWidth: 140,
+      target: 'scale-line-container' // Lejantı bu ID'ye sahip elementin içine çiz
+    });
+    this.map.addControl(scaleControl);
+
+    this.currentZoom = this.map.getView().getZoom();
+    this.map.getView().on('change:resolution', () => {
+      this.zone.run(() => {
+        this.currentZoom = this.map.getView().getZoom();
+      });
+    });
 
     this.loadExistingAreas();
     this.loadExistingPoints();
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
+    
+    this.map.on('pointermove', (event) => {
+      if (event.dragging) {
+        return;
+      }
+      const pixel = this.map.getEventPixel(event.originalEvent);
+      const feature = this.map.forEachFeatureAtPixel(pixel, f => f as Feature<Geometry>);
+      const featureId = feature ? feature.get('id') : null;
 
-    // Sol tık ile info paneli aç ve seçili alanı vurgula
+      if (this.hoveredFeatureId !== featureId) {
+        this.zone.run(() => {
+          this.hoveredFeatureId = featureId;
+          this.areaVectorSource.changed();
+          this.pointVectorSource.changed();
+        });
+      }
+    });
+
     this.map.on('click', (event) => {
       if (this.etkilesimModu !== 'none') return;
-      // Context menu açıksa kapat ve vurguyu kaldır
       this.contextMenuVisible = false;
       this.contextMenuFeature = null;
       this.selectedFeatureId = null;
@@ -138,7 +172,6 @@ export class MapComponent implements OnInit, OnDestroy {
       });
     });
 
-    // Sağ tık ile context menu aç + vurgulama
     this.map.getViewport().addEventListener('contextmenu', (event) => {
       event.preventDefault();
       const pixel = this.map.getEventPixel(event);
@@ -149,26 +182,21 @@ export class MapComponent implements OnInit, OnDestroy {
           this.contextMenuX = event.clientX;
           this.contextMenuY = event.clientY;
           this.contextMenuFeature = feature;
-          this.selectedFeatureId = feature.get('id'); // VURGULAMA
+          this.selectedFeatureId = feature.get('id');
           this.areaVectorSource.changed();
           this.pointVectorSource.changed();
         } else {
           this.contextMenuVisible = false;
           this.contextMenuFeature = null;
-          this.selectedFeatureId = null; // VURGULAMA SIFIRLA
+          this.selectedFeatureId = null;
           this.areaVectorSource.changed();
           this.pointVectorSource.changed();
         }
       });
     });
 
-    // Menü dışında bir yere tıklanınca context menu ve vurguyu kapat
     document.addEventListener('click', this.closeContextMenuOnClick);
-
-    // Dropdown dışında tıklanınca profil açılır menüyü kapat
     document.addEventListener('click', this.closeProfileDropdownOnClick);
-
-    // Profil menüsü için kullanıcıyı yükle
     this.loadCurrentUser();
   }
 
@@ -179,7 +207,6 @@ export class MapComponent implements OnInit, OnDestroy {
     this.tumEtkilesimleriDurdur();
   }
 
-  // Dropdown dışında tıklanınca kapansın
   closeProfileDropdownOnClick = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
     if (!target.closest('.profile-dropdown-container')) {
@@ -187,7 +214,6 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
-  // PROFİL DROPDOWN FONKSİYONLARI
   toggleProfileDropdown() {
     this.isProfileDropdownOpen = !this.isProfileDropdownOpen;
   }
@@ -197,22 +223,18 @@ export class MapComponent implements OnInit, OnDestroy {
     this.isProfileDropdownOpen = false;
   }
 
-  // Menü dışında tıklamada kapama + vurguyu kaldır
   closeContextMenuOnClick = (event: MouseEvent) => {
     if (this.contextMenuVisible) {
       this.zone.run(() => {
         this.contextMenuVisible = false;
         this.contextMenuFeature = null;
-        this.selectedFeatureId = null; // VURGULAMA SIFIRLA
+        this.selectedFeatureId = null;
         this.areaVectorSource.changed();
         this.pointVectorSource.changed();
       });
     }
   }
 
-  // ... (aşağıdaki kodlar değişmeden devam ediyor, sadece profil menüsü ilgili kısımlar güncellendi) ...
-
-  // Sağ tık context menü butonları
   onContextEdit() {
     if (!this.contextMenuFeature) return;
     const feature = this.contextMenuFeature;
@@ -242,22 +264,27 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   getFeatureStyle(feature: FeatureLike): Style {
-    const isSelected = feature.get('id') && feature.get('id') === this.selectedFeatureId;
+    const featureId = feature.get('id');
+    const isSelected = featureId && featureId === this.selectedFeatureId;
+    const isHovered = featureId && featureId === this.hoveredFeatureId;
+    
+    const isHighlighted = isSelected || isHovered;
+
     if (feature.get('feature_type') === 'area') {
       return new Style({
         stroke: new Stroke({
-          color: isSelected ? '#FF0000' : '#007bff',
-          width: isSelected ? 4 : 2
+          color: isHighlighted ? '#FF0000' : '#007bff',
+          width: isHighlighted ? 4 : 2
         }),
         fill: new Fill({
-          color: isSelected ? 'rgba(255, 0, 0, 0.1)' : 'rgba(0, 123, 255, 0.2)'
+          color: isHighlighted ? 'rgba(255, 0, 0, 0.1)' : 'rgba(0, 123, 255, 0.2)'
         })
       });
     } else {
       return new Style({
         image: new CircleStyle({
-          radius: isSelected ? 10 : 7,
-          fill: new Fill({ color: isSelected ? '#FF0000' : '#28a745' }),
+          radius: isHighlighted ? 10 : 7,
+          fill: new Fill({ color: isHighlighted ? '#FF0000' : '#28a745' }),
           stroke: new Stroke({ color: '#fff', width: 2 })
         })
       });
@@ -276,27 +303,6 @@ export class MapComponent implements OnInit, OnDestroy {
 
   getPanelClass(): string {
     return this.activePanel ? `${this.activePanel}-panel` : '';
-  }
-
-  public getModDurumuText(): string {
-    switch (this.etkilesimModu) {
-      case 'none':
-        return 'Görüntüleme Modu';
-      case 'add-area':
-        return 'Mod: Alan Ekle';
-      case 'edit-area':
-        return 'Mod: Alan Düzenle';
-      case 'delete-area':
-        return 'Mod: Alan Sil';
-      case 'add-point':
-        return 'Mod: Nokta Ekle';
-      case 'edit-point':
-        return 'Mod: Nokta Düzenle';
-      case 'delete-point':
-        return 'Mod: Nokta Sil';
-      default:
-        return 'Görüntüleme Modu';
-    }
   }
 
   getDrawingModeText(): string {
@@ -357,7 +363,6 @@ export class MapComponent implements OnInit, OnDestroy {
     this.selectedFeatureId = null;
     this.areaVectorSource?.changed();
     this.pointVectorSource?.changed();
-    // Menü panel açıldığında kapansın
     this.contextMenuVisible = false;
     this.contextMenuFeature = null;
   }
@@ -465,7 +470,6 @@ export class MapComponent implements OnInit, OnDestroy {
       this.formDescription = feature.get('description') || '';
       this.selectedFeatureInfo.type = isArea ? 'area' : 'point';
       this.activePanel = 'edit';
-      // Menü panel açıldığında kapansın
       this.contextMenuVisible = false;
       this.contextMenuFeature = null;
     }
@@ -667,7 +671,6 @@ export class MapComponent implements OnInit, OnDestroy {
     this.apiService.logout(); 
   }
 
-  // --- PROFİL MENÜSÜ YARDIMCI FONKSİYONLAR ---
   loadCurrentUser() {
     this.apiService.getCurrentUser().subscribe(user => {
       this.currentUser = user;
@@ -679,7 +682,7 @@ export class MapComponent implements OnInit, OnDestroy {
   saveProfile() {
     if (!this.currentUser) return;
     const updated = {
-      id: this.currentUser.id, // id'yi backend'e gönderiyoruz, UI'da göstermiyoruz
+      id: this.currentUser.id, 
       username: this.profileUsername,
       email: this.profileEmail,
       password: this.profilePassword || undefined

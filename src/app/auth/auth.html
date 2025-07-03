@@ -1,24 +1,93 @@
 <div class="auth-container">
   <div class="auth-form">
-    <h2>{{ isLoginMode ? 'Giriş Yap' : 'Kayıt Ol' }}</h2>
-    <form (ngSubmit)="onSubmit()">
-      <div class="form-group" *ngIf="!isLoginMode">
-        <label for="username">Kullanıcı Adı</label>
-        <input type="text" id="username" name="username" [(ngModel)]="username" required>
-      </div>
-      <div class="form-group">
-        <label for="email">E-posta</label>
-        <input type="email" id="email" name="email" [(ngModel)]="email" required>
-      </div>
-      <div class="form-group">
-        <label for="password">Şifre</label>
-        <input type="password" id="password" name="password" [(ngModel)]="password" required>
-      </div>
-      <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
-      <button type="submit" class="btn-submit">{{ isLoginMode ? 'Giriş Yap' : 'Kayıt Ol' }}</button>
-    </form>
-    <a (click)="toggleMode()" class="toggle-link">
-      {{ isLoginMode ? 'Hesabın yok mu? Kayıt Ol' : 'Zaten hesabın var mı? Giriş Yap' }}
-    </a>
+
+    <!-- Giriş Formu -->
+    <div *ngIf="mode === 'login'">
+      <h2>Giriş Yap</h2>
+      <form (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">E-posta</label>
+          <input type="email" id="email" name="email" [(ngModel)]="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" name="password" [(ngModel)]="password" required>
+        </div>
+        <a (click)="setMode('forgotPassword')" class="forgot-password-link">Şifremi Unuttum</a>
+        <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <button type="submit" class="btn-submit">Giriş Yap</button>
+      </form>
+      <a (click)="setMode('register')" class="toggle-link">
+        Hesabın yok mu? Kayıt Ol
+      </a>
+    </div>
+
+    <!-- Kayıt Formu -->
+    <div *ngIf="mode === 'register'">
+      <h2>Kayıt Ol</h2>
+      <form (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="fullName">Tam Ad</label>
+          <input type="text" id="fullName" name="fullName" [(ngModel)]="fullName" required>
+        </div>
+        <div class="form-group">
+          <label for="username">Kullanıcı Adı</label>
+          <input type="text" id="username" name="username" [(ngModel)]="username" required>
+        </div>
+        <div class="form-group">
+          <label for="email">E-posta</label>
+          <input type="email" id="email" name="email" [(ngModel)]="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" name="password" [(ngModel)]="password" required>
+        </div>
+        <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <button type="submit" class="btn-submit">Kayıt Ol</button>
+      </form>
+      <a (click)="setMode('login')" class="toggle-link">
+        Zaten hesabın var mı? Giriş Yap
+      </a>
+    </div>
+
+    <!-- Şifremi Unuttum Formu -->
+    <div *ngIf="mode === 'forgotPassword'">
+      <h2>Şifremi Unuttum</h2>
+      <p class="info-text">Şifre sıfırlama bağlantısı için lütfen e-posta adresinizi girin.</p>
+      <form (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="email">E-posta</label>
+          <input type="email" id="email" name="email" [(ngModel)]="email" required>
+        </div>
+        <p *ngIf="successMessage" class="success-message">{{ successMessage }}</p>
+        <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <button type="submit" class="btn-submit">Sıfırlama Bağlantısı Gönder</button>
+      </form>
+      <a (click)="setMode('login')" class="toggle-link">
+        Giriş ekranına geri dön
+      </a>
+    </div>
+
+    <!-- Şifre Sıfırlama Formu -->
+    <div *ngIf="mode === 'resetPassword'">
+      <h2>Yeni Şifre Belirle</h2>
+      <form (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="password">Yeni Şifre</label>
+          <input type="password" id="password" name="password" [(ngModel)]="password" required>
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Yeni Şifreyi Onayla</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" [(ngModel)]="confirmPassword" required>
+        </div>
+        <p *ngIf="successMessage" class="success-message">{{ successMessage }}</p>
+        <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+        <button type="submit" class="btn-submit">Şifreyi Güncelle</button>
+      </form>
+      <a (click)="setMode('login')" class="toggle-link">
+        Giriş ekranına geri dön
+      </a>
+    </div>
+
   </div>
 </div>

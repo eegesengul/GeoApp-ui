@@ -5,7 +5,7 @@
   </div>
 
   <!-- ARAMA PANELİ -->
-  <form class="search-panel" (ngSubmit)="$event.preventDefault()">
+  <form class="search-panel" (ngSubmit)="onSearch()">
     <input
       type="text"
       placeholder="Kullanıcı adı veya e-posta ara"
@@ -22,7 +22,11 @@
   </form>
   <!-- /ARAMA PANELİ -->
 
-  <div class="table-wrapper">
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!loading">
     <table>
       <thead>
         <tr>
@@ -48,9 +52,44 @@
             <button class="delete" (click)="openDeleteModal(user)">Sil</button>
           </td>
         </tr>
+        <tr *ngIf="filteredUsers.length === 0">
+          <td colspan="4" class="no-data">Gösterilecek kullanıcı bulunamadı</td>
+        </tr>
       </tbody>
     </table>
   </div>
+
+  <!-- SAYFALAMA KONTROLLERI -->
+  <div class="pagination-controls" *ngIf="totalUsers > 0">
+    <div class="page-size-selector">
+      <span>Gösterilen:</span>
+      <select [(ngModel)]="pageSize" (change)="changePageSize()" name="pageSize">
+        <option [value]="5">5</option>
+        <option [value]="10">10</option>
+        <option [value]="20">20</option>
+        <option [value]="50">50</option>
+      </select>
+    </div>
+
+    <div class="pagination" *ngIf="totalPages > 1">
+      <button [disabled]="currentPage === 1" (click)="previousPage()">Önceki</button>
+      
+      <div class="page-numbers">
+        <ng-container *ngFor="let page of generatePageArray()">
+          <span *ngIf="page === -1" class="page-dots">...</span>
+          <button 
+            *ngIf="page !== -1"
+            [class.active]="currentPage === page"
+            (click)="goToPage(page)">
+            {{ page }}
+          </button>
+        </ng-container>
+      </div>
+      
+      <button [disabled]="currentPage === totalPages" (click)="nextPage()">Sonraki</button>
+    </div>
+  </div>
+  <!-- /SAYFALAMA KONTROLLERI -->
 
   <!-- Edit Modal -->
   <div class="modal" *ngIf="isEditModalOpen">

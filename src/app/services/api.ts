@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
@@ -9,6 +9,21 @@ export interface CurrentUser {
   username: string;
   email: string;
   role?: string;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
 }
 
 @Injectable({
@@ -57,6 +72,16 @@ export class ApiService {
     );
   }
 
+  // YENİ - Şifre sıfırlama talebi fonksiyonu
+  forgotPassword(data: { email: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/Auth/forgot-password`, data);
+  }
+
+  // YENİ - Yeni şifreyi ayarlama fonksiyonu
+  resetPassword(data: { email: string; token: string; newPassword: string; confirmPassword: string; }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/Auth/reset-password`, data);
+  }
+
   logout(): void {
     localStorage.removeItem('token');
     this.loggedIn.next(false);
@@ -101,8 +126,15 @@ export class ApiService {
 
   // --- Admin Kullanıcı Yönetimi Fonksiyonları ---
 
-  getUsers(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/Users`, { headers: this.getAuthHeaders() });
+  getUsers(page: number = 1, pageSize: number = 20): Observable<PagedResult<User>> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('pageSize', pageSize.toString());
+
+    return this.http.get<PagedResult<User>>(`${this.baseUrl}/Users`, { 
+      headers: this.getAuthHeaders(), 
+      params: params
+    });
   }
 
   updateUser(userId: string, userData: { username: string; email: string; role: string; }): Observable<any> {
@@ -130,8 +162,6 @@ export class ApiService {
   }
 
   // --- Rol Kontrolü ---
-
-  // JWT decode (fallback, eğer endpoint'ten alınamıyorsa)
   private getUserFromToken(): { id?: string, username: string, email: string, role?: string, [key: string]: any } | null {
     const token = localStorage.getItem('token');
     if (!token) return null;

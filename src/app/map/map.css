@@ -5,9 +5,9 @@ html, body {
   height: 100vh;
   overflow: hidden;
   box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Harita ve kontrolleri içeren ana kapsayıcı */
 .map-container {
   position: fixed;
   inset: 0;
@@ -17,7 +17,6 @@ html, body {
   background: #e9ecef;
 }
 
-/* Harita artık kapsayıcısını %100 dolduracak */
 .map {
   width: 100vw;
   height: 100vh;
@@ -25,7 +24,7 @@ html, body {
   inset: 0;
 }
 
-/* --------- SAĞ ÜST ANA MENÜ BAR (Ekle + Admin + Profil) --------- */
+/* --------- SAĞ ÜST ANA MENÜ BAR --------- */
 .topbar-menu-container {
   position: absolute;
   top: 16px;
@@ -38,7 +37,7 @@ html, body {
 
 /* --------- PROFİL DROPDOWN MENÜ --------- */
 .profile-dropdown-container {
-  position: relative; /* artık absolute değil, flex içinde */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -55,29 +54,20 @@ html, body {
   font-size: 1em;
   font-weight: 600;
   color: #1a2a46;
-  transition: background .13s, border .13s;
-  box-shadow: 0 1px 6px #0001;
+  transition: background .13s, border .13s, box-shadow .13s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
   min-width: 160px;
   user-select: none;
 }
 .profile-menu:hover {
   background: #e8f0fe;
   border-color: #b4cdfa;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
-.profile-icon {
-  font-size: 1.3em;
-}
-.profile-name {
-  font-size: 1em;
-  font-weight: 500;
-  margin-right: 0.4em;
-}
-.dropdown-arrow {
-  font-size: 1.05em;
-  margin-left: 0.1em;
-}
+.profile-icon { font-size: 1.3em; }
+.profile-name { font-size: 1em; font-weight: 500; margin-right: 0.4em; }
+.dropdown-arrow { font-size: 1.05em; margin-left: 0.1em; }
 
-/* Dropdown içeriği */
 .profile-dropdown {
   margin-top: 4px;
   background: #fff;
@@ -85,7 +75,7 @@ html, body {
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(30,48,90,0.08);
   min-width: 180px;
-  padding: 7px 0;
+  padding: 7px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -94,144 +84,81 @@ html, body {
   right: 0;
 }
 .profile-dropdown button {
-  background: none;
-  border: none;
-  padding: 12px 20px;
-  font-size: 1em;
-  color: #1a2a46;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.13s, color 0.13s;
-  border-radius: 6px;
+  background: none; border: none; padding: 10px 16px; font-size: 1em;
+  color: #1a2a46; text-align: left; cursor: pointer;
+  transition: background 0.13s, color 0.13s; border-radius: 6px;
 }
-.profile-dropdown button:hover {
-  background: #e8f0fe;
-  color: #007bff;
-}
+.profile-dropdown button:hover { background: #f0f4fa; }
 
 /* --------- MODAL ORTAK --------- */
 .modal {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.22);
-  z-index: 2001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.3); z-index: 2001;
+  display: flex; align-items: center; justify-content: center;
 }
 .modal-content {
-  background: #fff;
-  border-radius: 12px;
-  padding: 32px 28px 22px 28px;
-  min-width: 320px;
-  min-height: 180px;
-  box-shadow: 0 4px 24px #0002;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  background: #fff; border-radius: 12px; padding: 32px 28px 22px 28px;
+  min-width: 320px; min-height: 180px; box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+  display: flex; flex-direction: column; gap: 16px;
 }
 .modal-content h3 {
-  margin: 0 0 10px 0;
-  font-size: 23px;
-  font-weight: 700;
-  color: #1a2a46;
-  text-align: left;
+  margin: 0 0 10px 0; font-size: 23px; font-weight: 700;
+  color: #1a2a46; text-align: left;
 }
 .modal-content label {
-  font-size: 15px;
-  font-weight: 500;
-  color: #2c3a4f;
-  margin-bottom: 7px;
-  display: block;
+  font-size: 15px; font-weight: 500; color: #2c3a4f;
+  margin-bottom: 7px; display: block;
 }
 .modal-content input, .modal-content textarea {
-  width: 100%;
-  border: 1px solid #cbd2e1;
-  border-radius: 6px;
-  padding: 9px 12px;
-  font-size: 15px;
-  margin-bottom: 12px;
-  box-sizing: border-box;
+  width: 100%; border: 1px solid #cbd2e1; border-radius: 6px;
+  padding: 9px 12px; font-size: 15px; margin-bottom: 12px; box-sizing: border-box;
 }
 .modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 14px;
-  margin-top: 7px;
+  display: flex; justify-content: flex-end; gap: 14px; margin-top: 7px;
 }
 .modal-actions button.primary {
-  background: #007bff;
-  color: #fff;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  padding: 9px 22px;
-  cursor: pointer;
-  font-size: 15px;
-  box-shadow: 0 2px 5px #007bff22;
-  transition: background 0.13s;
+  background: #007bff; color: #fff; font-weight: 600; border: none;
+  border-radius: 6px; padding: 9px 22px; cursor: pointer; font-size: 15px;
+  box-shadow: 0 2px 5px #007bff22; transition: background 0.13s;
 }
-.modal-actions button.primary:hover {
-  background: #0056b3;
-}
+.modal-actions button.primary:hover { background: #0056b3; }
 .modal-actions button {
-  background: #e0e5ec;
-  color: #222;
-  border: none;
-  border-radius: 6px;
-  padding: 9px 22px;
-  cursor: pointer;
-  font-size: 15px;
+  background: #e0e5ec; color: #222; border: none; border-radius: 6px;
+  padding: 9px 22px; cursor: pointer; font-size: 15px;
   transition: background 0.13s, color 0.13s;
 }
-.modal-actions button:hover:not(.primary) {
-  background: #cbd2e1;
-  color: #007bff;
-}
+.modal-actions button:hover:not(.primary) { background: #cbd2e1; }
 
-/* --------- Harita kontrol panelleri, context menu vs. eski haliyle devam --------- */
+/* --------- Harita kontrol panelleri, context menu vs. --------- */
 .drawing-controls {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.75);
-  padding: 8px 15px;
-  border-radius: 8px;
-  z-index: 1001;
-  display: flex;
-  align-items: center;
-  gap: 15px;
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background-color: rgba(10, 25, 41, 0.8);
+  backdrop-filter: blur(4px);
+  padding: 8px 15px; border-radius: 8px;
+  z-index: 1001; display: flex; align-items: center; gap: 15px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 .drawing-controls span {
-  color: white;
-  font-weight: bold;
-  font-size: 16px;
+  color: white; font-weight: 600; font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
+
 .action-panel {
-  position: absolute;
-  top: 70px;
-  left: 10px;
-  width: 300px;
+  position: absolute; top: 70px; left: 10px; width: 300px;
   background-color: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(5px);
   padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
+  border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+  z-index: 1000; display: flex; flex-direction: column;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 .action-panel.info-panel { border-left: 5px solid #007bff; }
 .action-panel.add-panel { border-left: 5px solid #28a745; }
 .action-panel.edit-panel { border-left: 5px solid #ffc107; }
 .panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 8px;
-  margin-bottom: 15px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 15px;
 }
 .panel-header h3 { margin: 0; font-size: 18px; }
 .info-panel .panel-header h3 { color: #0056b3; }
@@ -243,10 +170,7 @@ html, body {
 }
 .panel-header .close-btn:hover { color: #333; }
 .panel-content .info-description {
-  font-size: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;
 }
 .panel-content .form-group { margin-bottom: 15px; }
 .panel-content .form-group label {
@@ -258,43 +182,22 @@ html, body {
   border-radius: 4px; box-sizing: border-box; font-size: 14px;
 }
 .panel-actions {
-  display: flex; justify-content: flex-end;
-  gap: 10px; margin-top: 15px;
+  display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;
 }
-.info-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
+.info-actions { display: flex; gap: 10px; margin-top: 12px; }
 .btn-edit {
-  background: #ffc107;
-  color: #212529;
-  font-weight: 600;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background 0.14s, color 0.14s;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.13);
+  background: #ffc107; color: #212529; font-weight: 600; border: none;
+  border-radius: 5px; padding: 8px 16px; cursor: pointer;
+  transition: background 0.14s, color 0.14s; box-shadow: 0 2px 5px rgba(0,0,0,0.13);
 }
-.btn-edit:hover {
-  background: #c89600;
-  color: #fff;
-}
+.btn-edit:hover { background: #e0a800; color: #212529; }
 .btn-delete {
-  background: #dc3545;
-  color: #fff;
-  font-weight: 600;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background 0.14s;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.13);
+  background: #dc3545; color: #fff; font-weight: 600; border: none;
+  border-radius: 5px; padding: 8px 16px; cursor: pointer;
+  transition: background 0.14s; box-shadow: 0 2px 5px rgba(0,0,0,0.13);
 }
-.btn-delete:hover {
-  background: #a71d2a;
-}
+.btn-delete:hover { background: #c82333; }
+
 button {
   padding: 10px 15px; font-size: 16px; color: white;
   border: none; border-radius: 5px; cursor: pointer;
@@ -308,66 +211,86 @@ button:active { transform: translateY(1px); }
 .btn-iptal { background-color: #6c757d; }
 .btn-undo { background-color: #ffc107; color: #212529; }
 .btn-cancel-draw { background-color: #dc3545; }
-.mode-indicator {
-  position: absolute;
-  bottom: 5px; 
-  left: 5px;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: white;
-  padding: 8px 15px;
-  border-radius: 8px;
-  z-index: 1000;
-  font-size: 14px;
-  font-weight: bold;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
+
 .custom-context-menu {
-  position: fixed;
-  z-index: 1001;
-  background: #fff;
-  border: 1px solid #aaa;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px #0002;
-  padding: 0.5em 0.7em;
-  min-width: 100px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  position: fixed; z-index: 1001; background: #fff;
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(30,48,90,0.1); padding: 6px;
+  min-width: 120px; display: flex; flex-direction: column; gap: 4px;
 }
 .custom-context-menu button {
-  background: none;
-  border: none;
-  padding: 8px 12px;
-  text-align: left;
-  width: 100%;
-  cursor: pointer;
-  font-size: 1em;
-  color: #222;
-  border-radius: 4px;
-  transition: background 0.13s;
+  background: none; border: none; padding: 8px 12px; text-align: left;
+  width: 100%; cursor: pointer; font-size: 1em; color: #222;
+  border-radius: 4px; transition: background 0.13s;
 }
-.custom-context-menu button:hover {
-  background: #007bff22;
-}
+.custom-context-menu button:hover { background: #f0f4fa; }
+
 .feature-menu-button {
-  background: #007bff;
-  color: #fff;
-  font-weight: 500;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  cursor: pointer;
-  font-size: 17px;
-  box-shadow: 0 2px 8px #0001;
-  transition: background 0.15s;
+  background: #fff; color: #212529; font-weight: 600;
+  border: 1px solid #e0e5ec;
+  border-radius: 8px; padding: 9px 18px; cursor: pointer;
+  font-size: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1);
+  transition: background 0.15s, box-shadow .15s;
 }
-.feature-menu-button:hover {
-  background: #0056b3;
-}
+.feature-menu-button:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
 .btn-admin {
-  background: #f07c00;
-  color: #fff;
+  background: #f07c00; color: #fff; border-color: #f07c00;
 }
 .btn-admin:hover {
-  background: #b85d00;
+  background: #d97000; border-color: #d97000;
+}
+
+/* GÜNCELLENDİ: Harita Bilgi Göstergeleri (Sol Alt) */
+/* .map-info-container'ı artık kullanmıyoruz, elemanları direkt pozisyonluyoruz */
+
+/* Ortak panel stili */
+.map-info-panel {
+  background-color: rgba(10, 25, 41, 0.8);
+  backdrop-filter: blur(5px);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  pointer-events: auto;
+}
+
+.zoom-indicator {
+  /* .map-info-panel'den stilleri alması için eklendi */
+  composes: map-info-panel; 
+  position: absolute;
+  left: 10px;
+  bottom: 50px; /* Lejantın üstünde durması için yukarı alındı */
+  z-index: 1000;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#scale-line-container {
+  /* .map-info-panel'den stilleri alması için eklendi */
+  composes: map-info-panel;
+  position: absolute;
+  left: 10px;
+  bottom: 10px; /* En altta bu olacak */
+  z-index: 1000;
+  padding: 2px 8px; /* İçerik için daha uygun padding */
+}
+
+#scale-line-container .ol-scale-line {
+  position: static;
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+}
+
+#scale-line-container .ol-scale-line-inner {
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  border-top: none;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 2px 8px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }

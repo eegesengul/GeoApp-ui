@@ -2,10 +2,7 @@
 
   <!-- SAĞ ÜST ANA MENÜ BAR (Ekle + Admin + Profil) -->
   <div class="topbar-menu-container">
-    <!-- Ekle (app-menu) -->
     <app-menu (featureSelected)="onFeatureSelected($event)"></app-menu>
-
-    <!-- Admin için Kullanıcı Yönetimi butonu -->
     <button 
       *ngIf="apiService.isAdmin()" 
       (click)="goToAdmin()"
@@ -14,8 +11,6 @@
     >
       Kullanıcı Yönetimi
     </button>
-
-    <!-- Profil Menü Dropdown -->
     <div class="profile-dropdown-container">
       <div class="profile-menu" (click)="toggleProfileDropdown()">
         <span class="profile-icon">👤</span>
@@ -61,9 +56,13 @@
     <button (click)="tumEtkilesimleriDurdur()" class="btn-cancel-draw">İptal Et</button>
   </div>
 
-  <!-- Mod Durum Göstergesi -->
-  <div class="mode-indicator">
-    <span>{{ getModDurumuText() }}</span>
+  <!-- Harita bilgi göstergeleri (Zoom + Ölçek) -->
+  <div class="map-info-container">
+    <div class="zoom-indicator">
+      Zoom: {{ currentZoom?.toFixed(2) }}
+    </div>
+    <!-- Lejant (ScaleLine) bu div içine OpenLayers tarafından çizilecek -->
+    <div id="scale-line-container"></div>
   </div>
 
   <!-- Haritanın gösterileceği ana alan -->
